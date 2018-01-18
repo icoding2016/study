@@ -21,18 +21,18 @@
 
 # examples:
 
-filelist=(""/bin/ipktest_bin" \
- "/sbin/ipktest_sbin" \
- "/lib/ipktest_lib" \
- "/usr/bin/ipktest_usrbin" \
- "/usr/sbin/ipktest_usrsbin" \
- "/usr/lib/ipktest_usrlib" \
- "/etc/cdcs/conf/ipktest_etccdcsconf" \
+filelist=("/bin/ipktest_bin" 
+ "/sbin/ipktest_sbin" 
+ "/lib/ipktest_lib" 
+ "/usr/bin/ipktest_usrbin" 
+ "/usr/sbin/ipktest_usrsbin" 
+ "/usr/lib/ipktest_usrlib" 
+ "/etc/cdcs/conf/ipktest_etccdcsconf" 
  "/opt/ipktest_opt")
 
-echo "Array size of filelist $(#{filelist[*]})"
+echo "Array size of filelist ${#filelist[*]}"
 echo "members:"
-for x in ${filelist[*]}:
+for x in ${filelist[*]}
 do
     printf "  %s\n" $x
 done
