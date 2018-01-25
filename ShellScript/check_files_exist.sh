@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/bin/bash
+
+# This script use array function which is not supported by sh
+# For pure posix compatible implementation, see check_files_exist_posix.sh
 
 filelist=(
  "/bin/ipktest_bin" 
