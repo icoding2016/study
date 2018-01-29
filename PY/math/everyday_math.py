@@ -5,6 +5,7 @@ import random
 class everyday_exec(object):
     def __init__(self):
         self.genCombinitionSet()
+        self.linewidth = 8
 
     # return a set of number-pairs
     def genCombinitionSet(self):
@@ -32,6 +33,16 @@ class everyday_exec(object):
                 self._combSet_times.append((i,j,k))
         print("CombinitionSet_times generated ({}): {}\n".format(len(self._combSet_times), self._combSet_times))
 
+        # gen times set
+        self._combSet_div = []
+        for i in range(3,10):
+            for j in range(3,10):
+                if (i, j) in self._combSet_div or (j, i) in self._combSet_div:
+                    continue
+                self._combSet_div.append((i,j))
+        #random.shuffle(self._combSet_div)
+        print("CombinitionSet_div generated ({}): {}\n".format(len(self._combSet_div), self._combSet_div))
+
     def genAddingSet(self):
         addingSet = []
         s = self._combSet_add.copy()
@@ -48,7 +59,7 @@ class everyday_exec(object):
         #print("AddSet generated ({}): {}".format(len(addingSet), addingSet))
         return addingSet
 
-    def genAbstractSet(self):
+    def genSubstractSet(self):
         abstractSet = []
         count = 0
         while count < 24:
@@ -73,12 +84,26 @@ class everyday_exec(object):
             timesSet.append((i*10+j, k))
         return timesSet
 
+    def genDivSet(self):
+        divSet = []
+        s = self._combSet_div.copy()
+        random.shuffle(s)
+        while len(s):
+            i, j = s.pop()
+            divSet.append((i*j, i))
+            if i != j:
+                divSet.append((i * j, j))
+        random.shuffle(divSet)
+        return divSet
+
+
     def shuffle(self, l):
         random.shuffle(l)
         print(l)
 
     def addingExec(self):
         aset = self.genAddingSet()
+        print("Add [{}]:".format(len(aset)))
         count=0
         for x, y in aset:
             print("{}+{}=__".format(x, y), end="\t")
@@ -87,10 +112,11 @@ class everyday_exec(object):
                 #print("")
                 count = 0
 
-    def abstractExec(self):
-        aset = self.genAbstractSet()
+    def substractExec(self):
+        sset = self.genSubstractSet()
+        print("Sub [{}]:".format(len(sset)))
         count=0
-        for x, y in aset:
+        for x, y in sset:
             print("{}-{}=__".format(x, y), end="\t")
             count+=1
             if count >= 6:
@@ -100,6 +126,7 @@ class everyday_exec(object):
     def timesExec(self):
         tset = self.genTimesSet()
         random.shuffle(tset)
+        print("Time[{}]:".format(len(tset)))
         count = 0
         for x, y in tset:
             print("{}x{}=__ ".format(x, y), end="\t")
@@ -108,14 +135,57 @@ class everyday_exec(object):
                 #print("")
                 count = 0
 
-    def go(self):
-        for i in range(3):
+    def genQuiz(self):
+        a = self.genAddingSet() + self.genAddingSet()
+        #print("generate add-set[{}]".format(len(a)))
+        s = self.genSubstractSet() + self.genSubstractSet()
+        #print("generate sub-set[{}]".format(len(s)))
+        t = self.genTimesSet()
+        #print("generate time-set[{}]".format(len(t)))
+        d = self.genDivSet()
+        #print("generate div-set[{}]".format(len(d)))
+        self.output_quiz(a, s, t, d)
+
+    def output_quiz(self, a, s, t, d):
+        linewidth = self.linewidth
+        line = 0
+        count = 0
+        m = min([len(a), len(s), len(t), len(d)])
+        while line < int(m/linewidth):
+            for i in range(linewidth):
+                x,y = a[count+i]
+                print("{}+{}=__".format(x, y), end="\t")
+            print('')
+            for i in range(linewidth):
+                x,y = s[count+i]
+                print("{}-{}=__".format(x, y), end="\t")
+            print('')
+            for i in range(linewidth):
+                x, y = t[count + i]
+                print("{}x{}=__ ".format(x, y), end="\t")
+            print('')
+            for i in range(linewidth):
+                x, y = d[count + i]
+                print("{}/{}=__ ".format(x, y), end="\t")
+            print('')
+            print('-' * 68)
+            count += linewidth
+            line += 1
+
+    def genQuiz_old(self):
+        repeat = 3
+        for i in range(repeat):
             self.addingExec()
-            print('\n' + '-' * 80)
-            self.abstractExec()
-            print('\n' + '-' * 80)
+            print('\n' + '-' * 90)
+            self.substractExec()
+            print('\n' + '-' * 90)
             self.timesExec()
-            print('\n' + '-' * 80)
+            print('\n' + '-' * 90)
+
+    def go(self):
+        repeat = 5
+        for i in range(repeat):
+            self.genQuiz()
 
     def timeTable(self):
         tab = ["Zero","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve"]
