@@ -1,0 +1,22 @@
+SchoolInfoCollector
+
+Requirement
+-----------
+1.Gather school information from public websites and put it into DB.
+  Collect basic school information from web.  
+2.Provide methods to export school info data in specified formats (e.g. xls).
+3.Filtering and sorting schools with inputted criteria or conditions
+4.Pull relative information/diagram/comments from websites..
+
+School information to collect
+- Basic info: school name / location / type(pub,sel,pri) / co / 
+- ICSEA & rating (10 years)
+- HSC & rating (10 years)
+- NAPLAN & rating (10 years)    ? 
+- Student number
+- Non-English ratio
+- religion
+
+
+
+
