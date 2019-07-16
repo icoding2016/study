@@ -36,7 +36,7 @@ e.g. S1
 '''
 
 
-from utils import DEBUG
+from utils import Debug
 
 
 def S(A):
