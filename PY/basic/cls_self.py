@@ -40,7 +40,7 @@ class TestClassObj(TestClass):
         print("TestObject.Name: {}".format(self.Name))
 
     # Try visit class method from object
-    def Function2(self):
+    def AccessClassFunc(self):
         self.classFunction()
 
 
@@ -52,9 +52,15 @@ if __name__ == "__main__":
     C.classCounting()
     C.classFunction()
 
+    # directly call classmethod
+    TestClass.classCounting()
+    TestClass.classFunction()
+
     print("--TestClassObj--")
     O = TestClassObj()
     O.Function()
-    O.Function2()
+    # indirect call classmethod from instance func
+    O.AccessClassFunc()
+    # call classmethod by instance
     O.classCounting()
     O.classFunction()
