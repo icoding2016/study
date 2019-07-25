@@ -54,17 +54,19 @@ each element of array A is an integer within the range [−10,000..10,000].
 '''
 NOTE:
   Need optimization for performance
-  S1():  Basic logic, bad performance  -- O(N**3)
+  S1():  Basic logic, Brute Force, bad performance  -- O(N**3)
   S2():  Applies Prefix-Sum to sum(A[P:Q]), a bit improvement in perf  -- O(N**2)
-  S():   TODO: More improvement
+  S():   Applies both Prefix-Sum and Kadane's Algorithm  --
 '''
 
 
 from utils import Debug
 
 
-# time complexity: 
-# TODO: optimizing this to solve performance issue
+# time complexity:  O(N)
+# optimizing performance 
+# 1) prefix-sum         -- to calculate avg[P:Q] efficiently
+# 2) Kadane's Algorithm -- to find the min-avg slice
 def S(A):
     N = len(A)
     min_av = None
@@ -72,16 +74,33 @@ def S(A):
     if N == 2:
         return 0
     S = [0]*N
+    # Prepare S[] for prefix-sum
     for i in range(N):
         S[i] = A[i] + S[i-1] if i > 0 else A[i]
-    for p in range(N-1):
-        for q in range(p+1,N):
-            sm = S[q] - S[p-1] if p > 0 else S[q]
-            avg = sm/(q-p+1) 
-            if min_av is None or avg < min_av:
-                min_av = avg
-                min_pos = p
-    return  min_pos
+    
+    def avg(p, q):  # avg(A[p:q]),  (0 <= p < q <N)
+        summary = S[q] - S[p-1] if p > 0 else S[q]
+        avg = summary/(q-p+1) 
+        return avg
+
+    # Kadane's Algorithm
+    g_minavg = A[0]
+    g_p = 0    # Position (P) for g_minavg
+    c_min = A[0]
+    c_p = 0
+    for i in range(1, N):
+        avg_ii = avg(i-1, i)
+        avg_pi = avg(c_p, i)
+        if avg_ii < avg_pi:
+            c_p = i-1
+            c_minavg = avg_ii
+        else:
+            c_minavg = avg_pi
+
+        if c_minavg < g_minavg:
+            g_minavg = c_minavg
+            g_p = c_p
+    return  g_p
 
 
 # time complexity: O(N**2)
