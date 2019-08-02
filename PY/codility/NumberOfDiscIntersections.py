@@ -56,9 +56,11 @@ NOTE:
 
   Key: 
     - performance
+      The 'open/close disc' counting method
 
   1st try (S_circel):   wrong understanding of question. Thought it to be a 'circle' 
   2nd try (S_disc1):    Task Score 50%,  Correctness 100%, Performance 0%.
+  S_disc:     Task Score 100%.   The method
 
 '''
 
@@ -69,7 +71,8 @@ NOTE:
 #    (''('()'(')'(')')
 #         (    )')
 #    0  1 32 3 2 0            <- pairs (the open disc on the left of current position),   sum(1,3,2,3,2)
-# time complexity:  
+#
+# time complexity:  O(N*log(N)) or O(N)
 def S_disc(A):
     
     N = len(A)
@@ -84,7 +87,7 @@ def S_disc(A):
         disc_opr.append((i-A[i], 'O'))
         disc_opr.append((i+A[i], 'C'))
     disc_opr.sort(key=lambda x: (x[0], 1 if x[1]=='O' else 2)) 
-    print(disc_opr)
+    #print(disc_opr)
 
     count_open = 0
     count_pairs = 0
@@ -96,6 +99,8 @@ def S_disc(A):
         else:    # o=='C'
             count_open -= 1
             #print("disc_close pop: {}, count_open: {}".format(p, count_open))
+        if count_pairs > 10000000:
+            return -1
         
     return count_pairs
 
