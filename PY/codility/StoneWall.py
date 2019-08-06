@@ -71,7 +71,7 @@ def S(H):
             else:   # H[i] < H[i-1]  # close
                 while True:
                     if not stack:           # <----- take care of the logic here
-                        stack.append(H[i])
+                        stack.append(H[i])  # no stack or closed all open block in stack, still need to open current (low block)
                         count += 1
                         break
                     if stack[-1] > H[i]:   #close
