@@ -40,7 +40,8 @@ NOTE:
 
   Thought:
     - Hight Rise: to open a new block           (stack)
-    - High Fall: to close a/some opened blocks in stack (which was opened in bigger hight)
+    - Hight Fall: to close a/some opened blocks in stack (which was opened with bigger hight)
+                  new block need to be opened if there is no open block in stack
 
 
 '''
