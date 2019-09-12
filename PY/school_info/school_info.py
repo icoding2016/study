@@ -26,6 +26,28 @@ def LOG(msg):
     lg = log()
     lg.logInfo(msg)
 
+class SchoolInfo(object):
+    #betterEduRank, schoolName, percent, studentMum, examsSat, da, category, region
+    Name = ''
+    SchoolLevel = None       # ['K', 'P', 'H']  list of 'Kindy', 'Primary', 'High'
+    FundType = None         # String of Public, Selective,  Private
+    GenderType = None       # String of Co-edu, Boy, Girl
+    Location = ''           # Region (City name)
+    StudentNum = None
+    NonEnglishRatio = None  # a number in [0, 100] --> xx%
+    Religion = None         # String of 'No' or others like 'Anglican'
+    IcseaValue = None       # dict of recent 10 years { '2018':xx, '2017':xx, ... '2008':xx }
+    IcseaRank = None        # dict of recent 10 years { '2018':xx, '2017':xx, ... '2008':xx }
+    HscRank = None          # dict of recent 10 years { '2018':xx, '2017':xx, ... '2008':xx }  ~BetterEduRank
+    AtarRank=None           # dict of recent 10 years { '2018':xx, '2017':xx, ... '2008':xx }
+    TuitionFee = None       # Number of tuition fee of Y7 in 2018, for private school
+
+    def __init__(self):
+        pass
+
+    def print(self):
+        pass
+
 
 class WebScraper(object):
 
@@ -56,6 +78,8 @@ class WebScraper(object):
             writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
             for row in self._data:
                 writer.writerow(row)
+
+    #def findRec
 
 
 class BetterEduWebScraper(WebScraper):
