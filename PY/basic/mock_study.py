@@ -36,13 +36,17 @@ class Tester(unittest.TestCase):
             r = sys.version()
             print(r)
 
+
+    # Note: the sequence of mock.patch
+    @mock.patch("sys.modules", return_value="a fake result for sys.modules")
     @mock.patch("sys.version")
     @mock.patch("os.path")
-    def testMultiPatch(self, mock1, mock2):
+    def testMultiPatch(self, mock1, mock2, mock3):
         mock1.return_value = "fake os.path"
         mock2.return_value = "fake sys.version"
         print("mock1 (os.path): {}".format(os.path()))
         print("mock2 (sys.version): {}".format(sys.version()))
+        print("mock3 (sys.modules): {}".format(sys.modules()))
 
 def test_mockMethod():
     tester = Tester()    
