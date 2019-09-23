@@ -6,6 +6,9 @@ Note:
 
 '''
 
+from unittest import mock
+
+
 class Creature(object):
     defaultName = "A Creature"
        
@@ -54,15 +57,19 @@ class Mermaid2(Fish, Mammal):
 
     def Sing(self):
         print("The mermaid sings with a touching voice.")
-        
 
-class Mermaid3(Fish, Mammal):
+    def SuperSwim(self):
+        print("Start Super-Swim, the enhanced swimming ability.")
+
+class Mermaid3(Mammal, Fish):
 
     defaultName = "A Mermaid"
 
     def Sing(self):
         print("The mermaid sings with a touching voice.")
     
+    def SuperClimb(self):        
+        print("Start Super-Cimb, the enhanced climbing ability.")
         
 
 def test(T):
@@ -77,7 +84,15 @@ def test(T):
     mermaid.Sing()
 
 
+
 if __name__ == '__main__':
     test(Mermaid)
     test(Mermaid2)
     test(Mermaid3)
+
+    # mock.create_autospec
+    mockMermaid = mock.create_autospec(Mermaid2, spec_set=True)
+    mockMermaid.SuperSwim.return_value = "Fake SuperSwim" 
+    mockMermaid.SuperSwim()
+    mockMermaid.SuperClimb.return_value = "Fake SuperClimb"      # exception will raise
+    mockMermaid.SuperClimb()
