@@ -3,6 +3,10 @@
 Note:
 
   - For a derived class C(A, B), the order or A/B DOES matter.
+    In Descendent's init process, call B.__init__(), then A.__init__(),
+    So the 1st Parent Class in argments is the last to init.
+
+    And the 1st Parent Class' method is used when there are multiple implementations by different parents.
 
 '''
 
@@ -17,6 +21,7 @@ class Creature(object):
             self.name = name
         else:
             self.name = self.defaultName
+        print("Creature init.")
 
     def Name(self):
         return self.name
@@ -28,7 +33,11 @@ class Creature(object):
 class Mammal(Creature):
 
     defaultName = "A Mammal"
-       
+
+    def __init__(self, name=None):
+        super(Mammal, self).__init__(name)
+        print("Mammal init.")
+    
     def Type(self):
         return "MAMMAL"
 
@@ -39,6 +48,10 @@ class Mammal(Creature):
 class Fish(Creature):
     
     defaultName = "A Fish"
+
+    def __init__(self, name=None):
+        super(Fish, self).__init__(name)
+        print("Fish init.")
 
     def Type(self):
         return "FISH"
