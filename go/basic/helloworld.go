@@ -1,9 +1,9 @@
-package main
+package basic
 
 import (
 	"fmt"
 )
 
-func main() {
+func Hello() {
 	fmt.Printf("Hello world! \nThis is the first greeting from %s", "Yan")
 }
