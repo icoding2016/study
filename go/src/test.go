@@ -1,6 +1,7 @@
 package main
 
 import (
+	"basic"
 	"fmt"
 	"math"
 	"math/cmplx"
@@ -97,14 +98,14 @@ func typeOpr() {
 	var u uint = uint(f) // u := uint(f)
 
 	fmt.Println(f / 3)
+	fmt.Println(u)
 }
 
 func main() {
-	basic.helloword.Hellow()
-	basic.temp.Test_export()
+	basic.Hello()
+	basic.TestExport()
 
 	var i int = 1
-	k := 2
 	fmt.Printf("%v, %v, %v, %v", i, g, c, p)
 
 	showVar()
