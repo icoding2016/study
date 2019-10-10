@@ -1,19 +1,21 @@
-package main
+package basic
 
 import (
-	"basic"
 	"fmt"
 	"math"
 	"math/cmplx"
 	"runtime"
 )
 
+// PI : constant value for Pi
 const PI = 3.141592653589793238
 
 var g, c, p bool = true, false, false
 
 var (
-	ToBe   bool       = false
+	// ToBe : an exportable varible in package basic
+	ToBe bool = false
+	// MaxInt : an exportable varible in package basic
 	MaxInt uint64     = 1<<64 - 1
 	z      complex128 = cmplx.Sqrt(-5 + 12i)
 )
@@ -50,22 +52,22 @@ func loop(a int) int {
 
 func sqrt(x float64) string {
 	if x < 0 {
-		return fmt.Sprint("%v + i", math.Sqrt(-x))
-	} else {
-		return fmt.Sprint(math.Sqrt(x))
+		return fmt.Sprintf("%v + i", math.Sqrt(-x))
 	}
+	return fmt.Sprint(math.Sqrt(x))
 }
 
+// Sqrt : local version of Sqrt function
 func Sqrt(x float64) float64 {
 	var z = float64(1)
 	const GAP = 0.01
 
-	for gap_abs := GAP; gap_abs >= GAP; {
+	for gapAbs := GAP; gapAbs >= GAP; {
 		gap := z*z - x
 		if gap < 0 {
-			gap_abs = -gap
+			gapAbs = -gap
 		} else {
-			gap_abs = gap
+			gapAbs = gap
 		}
 		z -= gap / (2 * z)
 	}
@@ -101,9 +103,9 @@ func typeOpr() {
 	fmt.Println(u)
 }
 
-func main() {
-	basic.Hello()
-	basic.TestExport()
+func test() {
+	Hello()
+	TestExport()
 
 	var i int = 1
 	fmt.Printf("%v, %v, %v, %v", i, g, c, p)
