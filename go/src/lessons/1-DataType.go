@@ -26,6 +26,7 @@ package lessons
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"os"
 )
@@ -36,8 +37,20 @@ func L1_DataType() {
 	var d float64 = 4.0
 	var s string = "HackerRank "
 
-	scanner := bufio.NewScanner(os.Stdin)
+	//scanner := bufio.NewScanner(os.Stdin)
+	reader := bufio.NewReader(os.Stdin)
 
-	var ii = scanner.Scan()
-	fmt.Println(i)
+	ri, _ := reader.ReadBytes('\n')
+	var ii uint64 = i + binary.BigEndian.Uint16(ri)
+
+	rd, _ := reader.ReadBytes('\n')
+	var dd float64 = d + binary.BigEndian.Uint16(rd)
+
+	rs, _ := reader.ReadBytes('\n')
+	var ss string = s + rs
+
+	fmt.Println(ii)
+	fmt.Println(dd)
+	fmt.Println(ss)
+
 }
