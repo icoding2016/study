@@ -35,11 +35,15 @@ DEF_ROOT_FOLDER = os.path.join(DEF_WORKSPACE, DEF_TARGET_FOLDER)
 
 
 class Py3Stat(object):
-    pattern_pytarget = r'_library\(|_test\(|_binary\('     # the pattern for all types of Python targets in BUILD
+    #pattern_pytarget = r'_library\(|_test\(|_binary\('     # the pattern for all types of Python targets in BUILD, simply for counting
     pattern_pytarget_name = r'(py[\w_]*_binary|py[\w_]*_library|py[\w_]*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"'     # the pattern for python target names (incl */*) in BUILD
-    pattern_pylib_name = r'_library\(.*\s*name\s*=\s*\"(\w*)\"'   # the pattern for python library target names in BUILD
-    pattern_pybin_name = r'_binary\(.*\s*name\s*=\s*\"(\w*)\"'    # the pattern for python library target names in BUILD
-    pattern_pytest_name = r'_test\(.*\s*name\s*=\s*\"(\w*)\"'     # the pattern for python library target names in BUILD
+    pattern_py3target_name = r''     # the pattern for python target names (incl */*) in BUILD
+    pattern_pytarget_section = r'(py[\w_]*_binary|py[\w_]*_library|py[\w_]*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)'
+    pattern_pylib_section = r'(py[\w_]*_library)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)'
+    pattern_pybin_section = r'(py[\w_]*_binary)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)'
+    pattern_pytest_section = r'(py[\w_]*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)'
+    pattern_py3test_section = r'(py2and3[\w_]*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)'
+
 
     def __init__(self, root_folder=DEF_ROOT_FOLDER):
         self.root_folder = os.path.abspath(root_folder)
@@ -60,10 +64,17 @@ class Py3Stat(object):
             print(fn)
             with open(fn, 'rt') as f:
                 content = f.read()
-                found = self._FindPyTarget(content)
-                self.count_alltarget = len(found)
+                
+                alltarget = self._FindPyTarget(content)
+                self.count_alltarget = len(alltarget)
                 print("all targets count={}".format(self.count_alltarget))
-                self._PrintList(found)
+                self._PrintList(alltarget)
+
+                p3test = self._FindPy3Test(content)
+                self.count_p3test = len(p3test)
+                print("py3 test targets count={}".format(self.count_p3test))
+                self._PrintList(p3test)
+
                 return self.count_alltarget
 
 
@@ -73,25 +84,29 @@ class Py3Stat(object):
           content:  the BUILD file content
           return:   a list of found targets
         '''
-
-        if not content:
-            return None
-
-        r = re.findall(self.pattern_pytarget_name, content)
-        return r
+        if content:
+            return re.findall(self.pattern_pytarget_name, content)
+        return None
 
     def _FindPy3Target(self, content):
-        '''Find all the python3 targets in the given content (from a BUILD file)
+        '''Find all the python3 targets (lib/bin/test) in the given content (from a BUILD file)
           content:  the BUILD file content
-          return:   a list of found targets
+          return:   a list of found targets, None if no content provided
         '''
-        if not content:
-            return None
+        if content:
+            return re.findall(self.pattern_py3target_name, content)
+        return None
 
-        r = re.findall(self.pattern_py3target, content)
-        return r
+    def _FindPy3Test(self, content):
+        '''Find all the python3 test targets in the given content (from a BUILD file)
+          content:  the BUILD file content
+          return:   a list of found targets, None if no content provided
+        '''
+        if content:
+            return re.findall(self.pattern_py3test_section, content)
+        return None
 
-        
+
 
     def _PrintList(self, lst):
         if not lst or not isinstance(lst, list):
