@@ -47,9 +47,36 @@ class Py3Stat(object):
 
     def __init__(self, root_folder=DEF_ROOT_FOLDER):
         self.root_folder = os.path.abspath(root_folder)
+        self.report = ''
 
-    def ScanByTarget(self):        
-        pass
+    def ScanByTarget(self):
+        self.LogReport("==PY3 conversion report by targets==\n")
+        for fn in glob.iglob(self.root_folder + "**/BUILD", recursive=True):
+            with open(fn, 'rt') as f:
+                content = f.read()
+
+                self.LogReport("-"*60 + "\n")
+                self.LogReport("Scan {}:\n".format(fn))
+
+                p3test = self._FindPy3Test(content)
+                self.count_p3test = len(p3test)
+                self.LogReport("  py3 test targets count={}\n".format(self.count_p3test))
+                self.LogReport(p3test)
+                self.LogReport("\n")
+                #print("  py3 test targets count={}".format(self.count_p3test))
+                #self._PrintList(p3test)
+
+
+                alltarget = self._FindPyTarget(content)
+                self.count_alltarget = len(alltarget)
+                self.LogReport('-'*60 + "\n")
+                self.LogReport("all targets count={}\n".format(self.count_alltarget))
+                self.LogReport(alltarget)
+                #print("all targets count={}".format(self.count_alltarget))
+                #self._PrintList(alltarget)
+
+
+                return self.count_alltarget
 
     def ScanByFiles(self):
         print("not implemented")
@@ -57,6 +84,9 @@ class Py3Stat(object):
     def Report(self):        
         rep1 = ScanByTarget()
         print(rep1)
+
+    def PrintReport(self):
+        print(self.report)
 
     def CountTargetsPy(self):
         '''Count the PY target number under the specified folder (recursively)'''
@@ -114,6 +144,12 @@ class Py3Stat(object):
         for item in lst:
             print("  {}".format(item))
 
+    def LogReport(self, info):
+        if isinstance(info, list) or isinstance(info, tuple):
+            for x in info:
+                self.report += "    {}\n".format(x)
+        else:
+            self.report += info
 
 
 if __name__ == "__main__":
@@ -124,6 +160,7 @@ if __name__ == "__main__":
     else:
         p3stat = Py3Stat()
 
-    p3stat.CountTargetsPy()
-    #p3stat.Report()
+    p3stat.ScanByTarget()
+    p3stat.PrintReport()
+    
 
