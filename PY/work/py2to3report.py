@@ -77,6 +77,8 @@ class Py3Stat(object):
         self.count_py3bin = 0
         self.count_pybin = 0
 
+        self.sub_pyfolders = []
+        self.count_pymoudels = 0
 
     def ScanByTarget(self):
         self.LogReport("==PY3 conversion report by targets==\n")
@@ -88,7 +90,6 @@ class Py3Stat(object):
                 self.LogReport("Scan {}:\n".format(fn))
 
                 # scan py tests
-                #pytests = self._FindPyTests(content)
                 py3tests, py2tests = self._ScanPyTestInContent(content)
                 count_py2test = len(py2tests)
                 count_py3test = len(py3tests)
@@ -148,13 +149,24 @@ class Py3Stat(object):
                 self.LogReport("    bin  targets-- PY3:{}/{}, PY2:{}/{}\n".format(count_py3bin, count_pybin, count_py2bin, count_pybin))
                 self.LogReport("    test targets-- PY3:{}/{}, PY2:{}/{}\n".format(count_py3test, count_pytest, count_py2test, count_pytest))
                 self.LogReport("\n")
+
+                if count_localtarget > 0:
+                    self.sub_pyfolders.append(fn)
+                    self.count_pymoudels += 1
                 
         
         self.LogReport('\n' + '='*80 + "\n")
-        self.LogReport("Total targets: {}, \tPY3:{}   \tPY2:{},  \t{}% converted\n".format(self.count_alltarget, self.count_all3target, self.count_all2target, self.count_all3target*100/self.count_alltarget))
+        self.LogReport("Scanned folder:{}\n".format(self.root_folder))
+        self.LogReport("  Python modules (BUILD): {}\n".format(self.count_pymoudels))
+        for folder in self.sub_pyfolders:
+            self.LogReport("    {}\n".format(folder))
+        self.LogReport("\n  PY2->3 statistic\n")
         self.LogReport("    lib  targets--\tPY3:{}/{},\tPY2:{}/{}\n".format(self.count_py3lib, self.count_pylib, self.count_py2lib, self.count_pylib))
         self.LogReport("    bin  targets--\tPY3:{}/{},\tPY2:{}/{}\n".format(self.count_py3bin, self.count_pybin, self.count_py2bin, self.count_pybin))
         self.LogReport("    test targets--\tPY3:{}/{},\tPY2:{}/{}\n".format(self.count_py3test, self.count_pytest, self.count_py2test, self.count_pytest))
+        self.LogReport("  Total targets: {},\tPY3:{}   \tPY2:{},".format(self.count_alltarget, self.count_all3target, self.count_all2target))
+        if self.count_alltarget:
+            self.LogReport("  \t{}% converted\n".format(self.count_all3target*100/self.count_alltarget))
 
         return self.count_alltarget
 
@@ -173,58 +185,6 @@ class Py3Stat(object):
     def PrintReport(self):
         if self.report:
             print(self.report)
-
-    def CountTargetsPy(self):
-        '''Count the PY target number under the specified folder (recursively)'''
-        for fn in glob.iglob(self.root_folder + "**/BUILD", recursive=True):
-            print(fn)
-            with open(fn, 'rt') as f:
-                content = f.read()
-                
-                alltarget = self._FindPyTargets(content)
-                self.count_alltarget = len(alltarget)
-                print("all targets count={}".format(self.count_alltarget))
-                self._PrintList(alltarget)
-
-                p3test = self._FindPy3Tests(content)
-                self.count_py3test = len(p3test)
-                print("py3 test targets count={}".format(self.count_py3test))
-                self._PrintList(p3test)
-
-                return self.count_alltarget
-
-
-
-    def _FindPyTargets(self, content):
-        '''Find all the python targets in the given content (from a BUILD file)
-
-          parameters:
-            content:  the BUILD file content
-            return:   a list of found targets
-        '''
-        if content:
-            return re.findall(self.pattern_pytarget, content)
-        return None
-
-    def _FindPy3Targets(self, content):
-        '''Find all the python3 targets (lib/bin/test) in the given content (from a BUILD file)
-
-          parameters:
-            content:  the BUILD file content
-            return:   a list of found targets, None if no content provided
-        '''
-        raise AssertionError("Not implemented yet.")
-
-    def _FindPyTests(self, content):
-        '''Find all the python targets in the given content (from a BUILD file)
-
-          parameters:
-            content:  the BUILD file content
-            return:   a list of found targets
-        '''
-        if content:
-            return re.findall(self.pattern_pytarget_test, content)
-        return None
 
     def _ScanPyTestInContent(self, content):
         '''Find all the PY2 and PY3 test targets in the given content (from a BUILD file)
@@ -253,45 +213,6 @@ class Py3Stat(object):
             py2tests.append((target_type, name, "P2_test"))
 
         return py3tests, py2tests
-
-    def _FindPy2Tests(self, content):
-        '''Find all the python2 test targets in the given content (from a BUILD file)
-
-          parameters:
-            content:  the BUILD file content
-            return:   a list of found targets, None if no content provided     [ (target-type, name, PY2-or_PY3) ...]
-        '''
-
-        if content:
-            _, py2tests = self._ScanPyTestInContent(content)
-            return py2tests
-        return None
-        
-
-    def _FindPy3Tests(self, content):
-        '''Find all the python3 test targets in the given content (from a BUILD file)
-
-          parameters:
-            content:  the BUILD file content
-            return:   a list of found targets, None if no content provided
-        '''
-
-        if content:
-            py3tests, _ = self._ScanPyTestInContent(content)
-            return py3tests
-        return None
-
-
-    def _FindPyLibs(self, content):
-        '''Find all the python targets in the given content (from a BUILD file)
-
-          parameters:
-            content:  the BUILD file content
-            return:   a list of found targets
-        '''
-        if content:
-            return re.findall(self.pattern_pytarget_lib, content)
-        return None
 
     def _ScanPyLibInContent(self, content):
         '''Find all the PY2 and PY3 lib targets in the given content (from a BUILD file)
@@ -378,13 +299,14 @@ class Py3Stat(object):
 
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
+    arg_num = len(sys.argv)
+    if arg_num ==2:
         rootdir = sys.argv[1]
         p3stat = Py3Stat(root_folder=rootdir)
+        p3stat.CreateReport(scanType="target")
+        p3stat.PrintReport()
     else:
-        p3stat = Py3Stat()
+        print("py2to3report.py <path-to-scan>")
 
-    p3stat.CreateReport(scanType="target")
-    p3stat.PrintReport()
     
 
