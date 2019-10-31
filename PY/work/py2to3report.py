@@ -12,9 +12,13 @@ Ideas:
         - for test: 
           PY3: py2and3.*_test or py[type][_strict]_test with 'python_version = "PY3"'
           PY2: py[type][_strict]_test with 'python_version = "PY2" or no python_version
-        - for lib/bin
-          srcs_version = "PY2AND3" vs srcs_version = "PY2"; the 'srcs_version' tag may not exist (considered as python2 before conversion)
-          python_version = "PY2" or "PY3" (optional, for more common cases the tag does not exist)
+        - for py lib/bin
+          srcs_version = "PY2AND3"|"PY3"|"PY3ONLY" vs srcs_version = "PY2"|"PY2ONLY"; the 'srcs_version' tag may not exist (considered as python2 before conversion)
+          python_version = "PY2" vs "PY3"|"PY3ONLY" (optional, for more common cases the tag does not exist)
+        - py_proto_library:
+          name  py_pb2, api_version=2         --> PY3
+          name  py_pb1 or _pb, api_version=1 and there is not _pb2 version exist --> PY2
+        https://g3doc.corp.google.com/devtools/python/g3doc/python-migration.md?cl=head
 
 2. File based:    (converted_files / all_files)
    - count all .py files under the folder.
@@ -45,11 +49,11 @@ class Py3Stat(object):
     #pattern_pytarget = r'_library\(|_test\(|_binary\('     # the pattern for all types of Python targets in BUILD, simply for counting
     pattern_pytarget = r'(py\w*_binary|py\w*_library|py\w*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"'     # the pattern for python target names (incl */*) in BUILD
     pattern_pytarget_test = r'(py\w*_test)\(.*\s*name\s*=\s*\"(.*)\",'                  # group: (target_type, target_name)
-    pattern_pytarget_lib  = r'((py\w*_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?srcs_version\s*=\s*"(\w*)",\s*[\s\S]*?\))'      # group: (the whole section, target_type, name, srcs_version)
-    #pattern_pytarget_bin  = r'(py\w*_linary)\(.*\s*name\s*=\s*\"(.*)\",'                # group: (target_type, target_name)
+    #pattern_pytarget_lib  = r'((py\w*_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?srcs_version\s*=\s*"(\w*)",\s*[\s\S]*?\))'      # group: (the whole section, target_type, name, srcs_version)
     pattern_pytest_section = r'(py\w*_test\(.*\s*name\s*=\s*\"[\w\/]*\"[\s\S]*?\))'          # group: (the whole section)
     pattern_pylib_section  = r'((py\w*_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?\))'    # group: (the whole section, target_type, name)
     pattern_pybin_section  = r'((py\w*_binary)\(.*\s*name\s*=\s*\"([\w\/])*\"[\s\S]*?\))'    # group: (the whole section, target_type, name)
+    pattern_pyproto_section  = r'((py_proto_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?api_version\s*=\s*(\d)[\s\S]*?\))'      # group: (the whole section, target_type, name, api_version)
     pattern_py2and3test = r'(py2and3\w*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)' # group: (target_type, target_name)
     pattern_pytest_py3 = r'(py_test|py[^2]\w*_test)\(.*\s*name\s*=\s*\"(.*)\"[\s\S]*?python_version\s*=\s*\"PY3\",'  # group: (target_type, target_name)
     pattern_srcver = r'srcs_version\s*=\s*\"(\w*)\",'                                   # group (src_version), may not exist.
@@ -134,6 +138,9 @@ class Py3Stat(object):
                 self.count_py3bin += count_py3bin
                 self.count_pybin  += count_pybin
 
+                # TODO: scan py_proto_library
+
+
                 # local summary (targets in current dir)
                 count_localtarget = count_pylib + count_pytest + count_pybin
                 count_localtarget_py3 = count_py3lib + count_py3test + count_py3bin
@@ -151,15 +158,16 @@ class Py3Stat(object):
                 self.LogReport("\n")
 
                 if count_localtarget > 0:
-                    self.sub_pyfolders.append(fn)
+                    self.sub_pyfolders.append((fn, count_localtarget_py3, count_localtarget))
                     self.count_pymoudels += 1
                 
         
         self.LogReport('\n' + '='*80 + "\n")
         self.LogReport("Scanned folder:{}\n".format(self.root_folder))
         self.LogReport("  Python modules (BUILD): {}\n".format(self.count_pymoudels))
-        for folder in self.sub_pyfolders:
-            self.LogReport("    {}\n".format(folder))
+        self.LogReport("    Sub-folder, \tPY3-targets, \tTotal-targets:\n")
+        for folder, py3, pyall in self.sub_pyfolders:
+            self.LogReport("    {},    {}, {}\n".format(folder, py3, pyall))
         self.LogReport("\n  PY2->3 statistic\n")
         self.LogReport("    lib  targets--\tPY3:{}/{},\tPY2:{}/{}\n".format(self.count_py3lib, self.count_pylib, self.count_py2lib, self.count_pylib))
         self.LogReport("    bin  targets--\tPY3:{}/{},\tPY2:{}/{}\n".format(self.count_py3bin, self.count_pybin, self.count_py2bin, self.count_pybin))
@@ -228,10 +236,12 @@ class Py3Stat(object):
         py3libs = []
         for section in pylib_sections:
             wholesection, target_type, name = section
+            if target_type == "py_proto_library":     # ignore py_proto_library which should be handled separately from py_lib type.
+                continue
             found = re.findall(self.pattern_srcver, wholesection)
             if found:
                 srcver = found[0]
-                if srcver in ("PY3", "PY2AND3"):
+                if srcver in ("PY3", "PY2AND3", "PY3ONLY"):
                     py3libs.append((target_type, name, "{}_lib".format(srcver)))
                 else:
                     py2libs.append((target_type, name, "PY2_lib"))
