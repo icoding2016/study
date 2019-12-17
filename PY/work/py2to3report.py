@@ -52,7 +52,7 @@ class Py3Stat(object):
     #pattern_pytarget_lib  = r'((py\w*_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?srcs_version\s*=\s*"(\w*)",\s*[\s\S]*?\))'      # group: (the whole section, target_type, name, srcs_version)
     pattern_pytest_section = r'(py\w*_test\(.*\s*name\s*=\s*\"[\w\/]*\"[\s\S]*?\))'          # group: (the whole section)
     pattern_pylib_section  = r'((py\w*_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?\))'    # group: (the whole section, target_type, name)
-    pattern_pybin_section  = r'((py\w*_binary)\(.*\s*name\s*=\s*\"([\w\/])*\"[\s\S]*?\))'    # group: (the whole section, target_type, name)
+    pattern_pybin_section  = r'((py\w*_binary)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\))'    # group: (the whole section, target_type, name)
     pattern_pyproto_section  = r'((py_proto_library)\(.*\s*name\s*=\s*\"(.*)\",\s*[\s\S]*?api_version\s*=\s*(\d)[\s\S]*?\))'      # group: (the whole section, target_type, name, api_version)
     pattern_py2and3test = r'(py2and3\w*_test)\(.*\s*name\s*=\s*\"([\w\/]*)\"[\s\S]*?\)' # group: (target_type, target_name)
     pattern_pytest_py3 = r'(py_test|py[^2]\w*_test)\(.*\s*name\s*=\s*\"(.*)\"[\s\S]*?python_version\s*=\s*\"PY3\",'  # group: (target_type, target_name)
