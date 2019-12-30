@@ -19,7 +19,8 @@ Change your Sqrt function to return an ErrNegativeSqrt value when given a negati
 https://tour.golang.org/methods/20
 */
 
-package main
+//package main
+package exercise
 
 import (
 	"fmt"
@@ -55,7 +56,7 @@ func Sqrt(x float64) (float64, error) {
 	return z, nil
 }
 
-func main() {
+func Exer_Error() {
 	fmt.Println(Sqrt(2))
 	fmt.Println(Sqrt(-2))
 }

@@ -6,7 +6,8 @@ The wc.Test function runs a test suite against the provided function and prints 
 You might find strings.Fields helpful.
 */
 
-package main
+//package main
+package exercise
 
 import (
 	"fmt"
@@ -34,7 +35,7 @@ func WordCount(s string) map[string]int {
 	return m
 }
 
-func main() {
+func Exer_Map() {
 	example := "I hate burger, but I will eat 2 bugers since there is nothing else to eat."
 
 	m := WordCount(example)

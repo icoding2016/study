@@ -12,9 +12,10 @@ type Reader interface {
 
 */
 
-package main
+package exercise
 
-import "golang.org/x/tour/reader"
+/*
+//import "golang.org/x/tour/reader"
 
 type MyReader struct {
 	i int // current index
@@ -28,7 +29,9 @@ func (mr MyReader) Read(b []byte) (n int, e error) {
 	return 1, nil
 }
 
-func main() {
+func Exer_Reader() {
 	r := MyReader{}
 	reader.Validate(r)
 }
+
+*/

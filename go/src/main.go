@@ -1,10 +1,11 @@
 package main
 
 import (
-	"lessons"
+	"exercise"
 )
 
 func main() {
 	// lessons.L0_InOutput()
-	lessons.L1_DataType()
+	//lessons.L1_DataType()
+	exercise.Exer_Fibonacci(12)
 }
