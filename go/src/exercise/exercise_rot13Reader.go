@@ -14,7 +14,9 @@ https://tour.golang.org/methods/23
 
 */
 
-package main
+//package main
+package exercise
+
 
 import (
 	"io"
@@ -43,7 +45,7 @@ func (p rot13Reader) Read(b []byte) (n int, e error) {
 	return n, e
 }
 
-func main() {
+func Exer_Rot13Reader() {
 	s := strings.NewReader("Lbh penpxrq gur pbqr!")
 	r := rot13Reader{s}
 	io.Copy(os.Stdout, &r)
