@@ -7,7 +7,9 @@ Define a func btree(d []int,) Tree, where inInsert
 
 package exercise
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // BTree a Binary Tree Struct
 type BTree struct {
@@ -15,6 +17,13 @@ type BTree struct {
 	left  *BTree
 	right *BTree
 }
+
+type btreeLevel struct {
+	lOpen bool
+	rOpen bool
+}
+
+type levels []btreeLevel
 
 // Insert a value in the binary tree (lower to left, higher to right)
 //   t: current BTree node
@@ -83,6 +92,30 @@ func (t *BTree) Show() {
 	t.right.Show()
 }
 
+// Draw walk throught the tree and display the tree structure
+//   t: current node
+func (t *BTree) Draw() {
+	if t == nil {
+		return
+	}
+	fmt.Printf("[%v]", t.value)
+	fmt.Printf("\tleft->")
+	if t.left == nil {
+		fmt.Printf("nil")
+	} else {
+		fmt.Printf("%v", t.left.value)
+	}
+	fmt.Printf("\tright->")
+	if t.right == nil {
+		fmt.Printf("nil\n")
+	} else {
+		fmt.Printf("%v\n", t.right.value)
+	}
+
+	t.left.Draw()
+	t.right.Draw()
+}
+
 // New generate a BTree based on the inInsert list of value (by the order of the sequence)
 func (t *BTree) New(d []int) *BTree {
 	if len(d) == 0 {
@@ -98,3 +131,29 @@ func (t *BTree) New(d []int) *BTree {
 	}
 	return root
 }
+
+//////////////////
+
+// func (l *levels) append(ls *levels, bl *btreeLevel) {
+// 	if len(ls)+1 > cap(ls) {
+// 		nls = make([]btreeLevel, cap(ls)+1)
+// 		nls[:len(ls)] = ls[:len(ls)]
+// 		for i := 0; i < cap(ls); i++ {
+// 			ls[i] = nil
+// 		}
+
+// 	}
+// }
+
+// func (l levels) Push(n btreeLevel) int {
+// 	l = append(l, n)
+// 	return len(l)
+// }
+
+// func (l levels) Pop(n btreeLevel) (btreeLevel, error) {
+// 	if len(l) == 0 {
+// 		return nil, errors.New("Fails to pop from an empty queue.")
+// 	}
+// 	n, l = l[len(l)-1], l[:len(l)-1]
+// 	return n, nil
+// }
