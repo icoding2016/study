@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Node a struct holding an int value
 type Node struct {
 	value int
 }
@@ -17,20 +18,21 @@ type Node struct {
 type Nodes []Node
 
 // Push a node to the queue of Nodes
-func (ns Nodes) Push(n *Node) (Nodes, error) {
-	ns = append(ns, *n)
+func (pns *Nodes) Push(n *Node) (*Nodes, error) {
+	ns := append(*pns, *n)
 	fmt.Printf("ns: %v", ns)
-	return ns, nil
+	pns = &ns
+	return pns, nil
 }
 
 // Pop the latest item out of the queue of Nodes
-func (ns Nodes) Pop() (Node, error) {
+func (pns *Nodes) Pop() (Node, error) {
 	var node Node
 
-	if len(ns) == 0 {
+	if len(*pns) == 0 {
 		return node, errors.New("Queue is empty")
 	}
-	node, ns = ns[len(ns)-1], ns[:len(ns)-1]
+	node, *pns = (*pns)[len(*pns)-1], (*pns)[:len(*pns)-1]
 	return node, nil
 }
 
@@ -38,21 +40,26 @@ func (ns Nodes) Pop() (Node, error) {
 func TestPushPop() {
 	l := []int{5, 2, 3, 8, 6, 1, 4, 9, 7, 10}
 	ns := Nodes{}
+	pns := &ns
+
+	fmt.Printf("ns=%v", ns)
 
 	for _, v := range l {
-		node := new(Node)
-		node.value = v
-		ns, err := ns.Push(node)
+		node := &Node{v}
+		//node.value = v
+		p, err := pns.Push(node)
+		pns = p
 		if err == nil {
-			fmt.Printf("%v pushed to Nodes, now len=%v\n", node, len(ns))
+			fmt.Printf("%v pushed to Nodes, now len=%v\n", node, len(*pns))
 		}
 	}
 
-	fmt.Printf("%v", ns)
+	fmt.Printf("%v", pns)
 	fmt.Println("-------------------")
 
-	for n, err := ns.Pop(); err == nil; n, err = ns.Pop() {
+	for n, err := pns.Pop(); err == nil; n, err = pns.Pop() {
 		fmt.Printf("Pop %v from Nodes\n", n)
 	}
+	fmt.Println("-------------------")
 
 }
