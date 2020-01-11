@@ -39,5 +39,5 @@ func Exer_Map() {
 	example := "I hate burger, but I will eat 2 bugers since there is nothing else to eat."
 
 	m := WordCount(example)
-	fmt.Println("%v", m)
+	fmt.Printf("%v", m)
 }

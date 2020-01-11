@@ -32,39 +32,36 @@ type levels []btreeLevel
 //            parent - the pointer to parent BTree node
 func (t *BTree) Insert(value int) (*BTree, *BTree) {
 	if t == nil {
-		//fmt.Printf("Create new tree-node from %v(%v), value=%v\n", nil, nil, value)
-		//t := new(BTree)
-		//t.value = value
-		return nil, nil
+		fmt.Printf("Create new tree-node from %v(%v), value=%v\n", nil, nil, value)
+		*t = BTree{value, nil, nil}
+		return t, nil
 	}
 
-	var n *BTree = nil
-	var p *BTree = nil
+	var pn *BTree
+	var pp *BTree
 
-	if value < t.value {
+	n := BTree{value, nil, nil}
+	//pn = &n
+
+	if value <= t.value {
 		fmt.Printf("Go left node from %v(%v)->left for inserting %v\n", t, t.value, value)
 		if t.left != nil {
-			n, p = t.left.Insert(value)
+			pn, pp = t.left.Insert(value)
 		} else {
-			t.left = new(BTree)
-			t.left.value = value
+			t.left = &n
 			return t.left, t
 		}
 
-	} else if value > t.value {
+	} else {  //if value > t.value {
 		fmt.Printf("Go right node from %v(%v)->right for inserting %v\n", t, t.value, value)
 		if t.right != nil {
-			t.right.Insert(value)
+			pn, pp = t.right.Insert(value)
 		} else {
-			t.right = new(BTree)
-			t.right.value = value
+			t.right = &n
 			return t.right, t
 		}
-	} else {
-		// same value, ignore
-		return t, nil
 	}
-	return n, p
+	return pn, pp
 }
 
 // Show walk throught the tree and display the value
@@ -123,11 +120,17 @@ func (t *BTree) New(d []int) *BTree {
 	}
 
 	root := t // point to parent node
-	root.value = d[0]
-	p := root
-	for _, v := range d[1:] {
-		_, p = root.Insert(v)
-		fmt.Printf("%v inserted under %v\n", v, p)
+	for _, v := range d {
+		pn, pp := root.Insert(v)
+		if root == nil {
+			if pp == nil {
+				root = pn
+			} else {
+				root = pp
+			}
+		}
+
+		fmt.Printf("%v inserted under %v\n", v, *pp)
 	}
 	return root
 }
