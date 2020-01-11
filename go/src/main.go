@@ -10,10 +10,10 @@ func main() {
 	//exercise.Fibonacci(12)
 
 	//
-	exercise.TestPushPop()
+	//exercise.TestPushPop()
 	//
-	//t := new(exercise.BTree)
-	//t.New([]int{5, 3, 1, 7, 2, 6, 9})
+	t := new(exercise.BTree)
+	t.New([]int{5, 3, 1, 7, 2, 6, 9})
 	//fmt.Println(t)
-	//t.Show()
+	t.Show()
 }
