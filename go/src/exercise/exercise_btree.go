@@ -1,5 +1,5 @@
 /*
-Define a func btree(d []int,) Tree, where inInsert
+Define a func BTreeNode(d []int,) Tree, where inInsert
   d:  a list of values,
   return: the root of the tree (a Tree structure) which is created based on the sequence of d
 
@@ -11,36 +11,36 @@ import (
 	"fmt"
 )
 
-// BTree a Binary Tree Struct
-type BTree struct {
+// BTreeNode a Binary Tree Struct
+type BTreeNode struct {
 	value int
-	left  *BTree
-	right *BTree
+	left  *BTreeNode
+	right *BTreeNode          
 }
 
-type btreeLevel struct {
+type BTreeNodeLevel struct {
 	lOpen bool
 	rOpen bool
 }
 
-type levels []btreeLevel
+type levels []BTreeNodeLevel
 
 // Insert a value in the binary tree (lower to left, higher to right)
-//   t: current BTree node
+//   t: current BTreeNode node
 //   return: (node, parent)
-//            node - the pointer to the BTree node where the new value is Inserted at,
-//            parent - the pointer to parent BTree node
-func (t *BTree) Insert(value int) (*BTree, *BTree) {
+//            node - the pointer to the BTreeNode node where the new value is Inserted at,
+//            parent - the pointer to parent BTreeNode node
+func (t *BTreeNode) Insert(value int) (*BTreeNode, *BTreeNode) {
 	if t == nil {
 		fmt.Printf("Create new tree-node from %v(%v), value=%v\n", nil, nil, value)
-		*t = BTree{value, nil, nil}
+		*t = BTreeNode{value, nil, nil}
 		return t, nil
 	}
 
-	var pn *BTree
-	var pp *BTree
+	var pn *BTreeNode
+	var pp *BTreeNode
 
-	n := BTree{value, nil, nil}
+	n := BTreeNode{value, nil, nil}
 	//pn = &n
 
 	if value <= t.value {
@@ -67,7 +67,7 @@ func (t *BTree) Insert(value int) (*BTree, *BTree) {
 // Show walk throught the tree and display the value
 //   t: current node
 //   return: parent node
-func (t *BTree) Show() {
+func (t *BTreeNode) Show() {
 	if t == nil {
 		return
 	}
@@ -91,7 +91,7 @@ func (t *BTree) Show() {
 
 // Draw walk throught the tree and display the tree structure
 //   t: current node
-func (t *BTree) Draw() {
+func (t *BTreeNode) Draw() {
 	if t == nil {
 		return
 	}
@@ -113,8 +113,8 @@ func (t *BTree) Draw() {
 	t.right.Draw()
 }
 
-// New generate a BTree based on the inInsert list of value (by the order of the sequence)
-func (t *BTree) New(d []int) *BTree {
+// New generate a BTreeNode based on the inInsert list of value (by the order of the sequence)
+func (t *BTreeNode) New(d []int) *BTreeNode {
 	if len(d) == 0 {
 		return nil
 	}
@@ -135,28 +135,3 @@ func (t *BTree) New(d []int) *BTree {
 	return root
 }
 
-//////////////////
-
-// func (l *levels) append(ls *levels, bl *btreeLevel) {
-// 	if len(ls)+1 > cap(ls) {
-// 		nls = make([]btreeLevel, cap(ls)+1)
-// 		nls[:len(ls)] = ls[:len(ls)]
-// 		for i := 0; i < cap(ls); i++ {
-// 			ls[i] = nil
-// 		}
-
-// 	}
-// }
-
-// func (l levels) Push(n btreeLevel) int {
-// 	l = append(l, n)
-// 	return len(l)
-// }
-
-// func (l levels) Pop(n btreeLevel) (btreeLevel, error) {
-// 	if len(l) == 0 {
-// 		return nil, errors.New("Fails to pop from an empty queue.")
-// 	}
-// 	n, l = l[len(l)-1], l[:len(l)-1]
-// 	return n, nil
-// }
