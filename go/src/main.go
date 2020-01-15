@@ -17,7 +17,8 @@ func main() {
 	//exercise.TestBTreeStack()
 
 	//exercise.TestReader()
-	exercise.TestScanner1()
+	//exercise.TestScanner1()
+	exercise.TestOperators1()
 
 	fmt.Println("---------------")
 }
