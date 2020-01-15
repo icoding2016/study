@@ -18,7 +18,8 @@ func main() {
 
 	//exercise.TestReader()
 	//exercise.TestScanner1()
-	exercise.TestOperators1()
+	//exercise.TestOperators1()
+	exercise.TestConditions()
 
 	fmt.Println("---------------")
 }
