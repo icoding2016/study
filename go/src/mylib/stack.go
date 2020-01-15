@@ -13,7 +13,6 @@ func Push(pt *[]T, t T) error {
 
 	if pt == nil {
 		n := append(*new([]T), t)
-		//p := make([]interface{}, 1);		p[0] = t
 		*pt = n
 	} else {
 		t1 := append(*pt, t)
@@ -45,7 +44,9 @@ func TestStack() {
 	var ss []int
 
 	for _, v := range ll {
-		Push(&ss, v)
+		// TODO
+		//Push(&ss, v)      // Issue to Solve here
+		fmt.Println(ss, v)
 	}
 	fmt.Printf("Stack: %v", ss)
 
