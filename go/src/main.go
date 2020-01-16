@@ -19,7 +19,9 @@ func main() {
 	//exercise.TestReader()
 	//exercise.TestScanner1()
 	//exercise.TestOperators1()
-	exercise.TestConditions()
+	//exercise.TestConditions()
+	//exercise.TestClassInstance1()
+	exercise.TestLoops1()
 
 	fmt.Println("---------------")
 }
