@@ -3,3 +3,5 @@ PY/codility/.~CodilityStudyRec.xlsx
 .vscode/
 PY/.vscode/
 go/.vscode/
+go/pkg/linux_amd64/*.a
+.gitignore
