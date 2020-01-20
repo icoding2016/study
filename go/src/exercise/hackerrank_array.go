@@ -35,7 +35,7 @@ import (
 )
 
 func TestArray() {
-	reader := bufio.NewReaderSize(os.Stdin, 1024*1024)
+	reader := bufio.NewReaderSize(os.Stdin, 1024*1024*10)
 
 	nTemp, err := strconv.ParseInt(testArrayReadLine(reader), 10, 64)
 	testArrayCheckError(err)
