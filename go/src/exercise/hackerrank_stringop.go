@@ -35,7 +35,6 @@ package exercise
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 )
@@ -49,11 +48,6 @@ func isEven(n uint64) bool {
 		return true
 	}
 	return false
-}
-
-func getReader() io.Reader {
-
-	return
 }
 
 func TestStrOp() {
