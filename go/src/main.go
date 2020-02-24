@@ -23,7 +23,8 @@ func main() {
 	//exercise.TestClassInstance1()
 	//exercise.TestLoops1()
 	//exercise.TestRecursive()
-	exercise.TestEBtreeLib()
+	//exercise.TestEBtreeLib()
+	exercise.TestSyncMutex()
 
 	fmt.Println("---------------")
 }
