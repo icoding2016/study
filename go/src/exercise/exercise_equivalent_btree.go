@@ -75,7 +75,7 @@ func Same(t1, t2 *tree.Tree) bool {
 	go Walk(t1, ch1)
 	go Walk(t2, ch2)
 
-	for i := 0; i < 10; i += 1 {
+	for i := 0; i < 10; i++ {
 		v1 = <-ch1
 		v2 = <-ch2
 		if v1 != v2 {
@@ -87,6 +87,13 @@ func Same(t1, t2 *tree.Tree) bool {
 }
 
 func TestEBtreeLib() {
+	t11 := tree.New(1)
+	t12 := tree.New(1)
+	t2 := tree.New(2)
+	fmt.Println(t11.String())
+	fmt.Println(t12.String())
+	fmt.Println(t2.String())
+
 	r1 := Same(tree.New(1), tree.New(1))
 	r2 := Same(tree.New(1), tree.New(2))
 	fmt.Println(r1)
