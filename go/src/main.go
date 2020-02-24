@@ -21,7 +21,9 @@ func main() {
 	//exercise.TestOperators1()
 	//exercise.TestConditions()
 	//exercise.TestClassInstance1()
-	exercise.TestLoops1()
+	//exercise.TestLoops1()
+	//exercise.TestRecursive()
+	exercise.TestEBtreeLib()
 
 	fmt.Println("---------------")
 }
