@@ -5,3 +5,5 @@ PY/.vscode/
 go/.vscode/
 go/bin/*
 go/pkg/*
+go/pkg/linux_amd64/*.a
+.gitignore

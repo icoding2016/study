@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"exercise"
+	"fmt"
 )
 
 func main() {
@@ -14,7 +14,17 @@ func main() {
 	// t.New([]int{5, 3, 1, 7, 2, 6, 9})
 	// t.Show()
 
-	exercise.TestBTreeStack()
+	//exercise.TestBTreeStack()
+
+	//exercise.TestReader()
+	//exercise.TestScanner1()
+	//exercise.TestOperators1()
+	//exercise.TestConditions()
+	//exercise.TestClassInstance1()
+	//exercise.TestLoops1()
+	//exercise.TestRecursive()
+	//exercise.TestEBtreeLib()
+	exercise.TestSyncMutex()
 
 	fmt.Println("---------------")
 }

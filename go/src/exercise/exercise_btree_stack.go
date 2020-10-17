@@ -43,7 +43,7 @@ func TestBTreeStack() {
 	fmt.Printf("%v", tns)
 
 	for node, err := tns.Pop(); err == nil; node, err = tns.Pop() {
-		fmt.Printf("%v", node)
+		fmt.Printf("%v\n", node)
 	}
 
 	
