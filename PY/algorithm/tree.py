@@ -83,19 +83,14 @@ class BTree(object):
             self.right._walk_post_order()
         print("{} ".format(self.value))
 
-    def _walk_level(self, level: int, walk_log: dict, max_level: int):
+    def _walk_level(self, level: int, walk_log: dict):
         '''the depth first walk (in-order) with level information
            supporting breadth first walk
 
            walk_log: the dict recording the tree level nodes value {<level>:[<value list>]}
-           max_level: used to record the max tree level (starting from 0) 
         '''
-        if max_level < level:
-            max_level = level
-
         if self.left:
-            m1 = self.left._walk_level(level=level+1, walk_log=walk_log, max_level=max_level)
-            max_level = m1 if m1 > max_level else max_level
+            self.left._walk_level(level=level+1, walk_log=walk_log)
 
         if level in walk_log.keys():
             walk_log[level].append(self.value)
@@ -103,11 +98,28 @@ class BTree(object):
             walk_log[level] = [self.value]
 
         if self.right:
-            m2 = self.right._walk_level(level=level+1, walk_log=walk_log, max_level=max_level)
-            max_level = m2 if m2 > max_level else max_level
+            self.right._walk_level(level=level+1, walk_log=walk_log)
 
-        return max_level
+    @staticmethod
+    def hight(tree):
+        ''' Count the tree hight
+            Time Complexity: O(2^L) (L=level) -- 1+2+4+..+2^(L-1)=2^L-1
+                             O(N)  (L=Node count).   N=2^L or L=LogN
+            Space Complexity: O(N)?
+        '''
+        if not tree.left and not tree.right:
+            return 1
+            
+        l_hight = 0
+        r_hight = 0
+        if tree.left:
+            l_hight = BTree.hight(tree.left) + 1
+        if tree.right:
+            r_hight = BTree.hight(tree.right) + 1
+
+        return l_hight if l_hight > r_hight else r_hight
         
+
     @staticmethod
     def breath_first_walk(root):
         '''Count & Remember the level of current node while walking through the tree
@@ -117,10 +129,9 @@ class BTree(object):
         if not root:
             return {}   # empty result
         result = dict()  # { <level>:[list of values], ...}
-        mxlvl = 0
-        mxlvl = root._walk_level(level=0, walk_log=result, max_level=mxlvl)
+        root._walk_level(level=0, walk_log=result)
         
-        for lvl in range(mxlvl+1):
+        for lvl in range(BTree.hight(root)):
             print(lvl, result[lvl])
 
 
@@ -136,6 +147,7 @@ def test():
     bt.walk(order='POST_ORDER')
 
     print('-'*30, "BREADTH_WALK")
+    print('hight', BTree.hight(bt))
     BTree.breath_first_walk(bt)
 
 test()
