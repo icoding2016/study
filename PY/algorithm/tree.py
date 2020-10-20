@@ -100,6 +100,15 @@ class BTree(object):
         if self.right:
             self.right._walk_level(level=level+1, walk_log=walk_log)
 
+    def print_level(self, level: int):
+        if level <= 0:
+            print(self.value, end=' ')
+            return
+        if self.left:
+            self.left.print_level(level=level-1)
+        if self.right:
+            self.right.print_level(level=level-1)
+
     @staticmethod
     def hight(tree):
         ''' Count the tree hight
@@ -132,7 +141,7 @@ class BTree(object):
         root._walk_level(level=0, walk_log=result)
         
         for lvl in range(BTree.hight(root)):
-            print(lvl, result[lvl])
+            print("level {}: {}".format(lvl, result[lvl]))
 
 
 
@@ -149,5 +158,10 @@ def test():
     print('-'*30, "BREADTH_WALK")
     print('hight', BTree.hight(bt))
     BTree.breath_first_walk(bt)
+
+    print('-'*30, "Print level")
+    bt.print_level(0); print("")
+    bt.print_level(1); print("")
+    bt.print_level(2); print("")
 
 test()
