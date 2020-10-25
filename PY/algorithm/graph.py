@@ -1,0 +1,307 @@
+# Graph exercise
+# 
+# DFS:  Use a list (to record path). Recursive.
+#       On each node: 
+#         Add current node to path;
+#         visit edge-nodes unless the node is visited (=all done on that node), 
+#         when all edge-nodes are visited, mark current node visited, and return;
+#         Note: when recurse edge-nodes, the one in the path has to be skipped (to avoid loop)
+#
+# BFS: Use a list (to record path)
+#       On each node:
+#         Add current node to path list
+#         iterate all edge-nodes in current node and save them to path (except those already saved)
+#         when all edge-nodes were visited, mark current node as 'visited'
+#         go back to the path list, pick next 'un-visited' node, repeat the dfs
+#
+# Path Finding (from A to B)
+#       On each node (Recursively)
+#          Push the node into current Path ('path')
+#          If current node is already B (found), record current path. then move one node backward (Pop the node from path and return)
+#          If current node is not B, go through all adjacencies (iteration).
+#            Skip the adjacenct node that is already in the path (avoid loop)
+#            Skip the adjacenct node that is 'visited' 
+#            Do the same path find call to the adjacent node.
+#            If all adjacenct node finished, mark current node 'visited', then move backward (pop it from path and return)
+#       Note: 
+#         1) this is path finding not bfs, so a node could be re-visited from other path options. 
+#            So we clear 'visited' flag for the node's adjacencies before current round of iteration.
+#         2) Pop current node from the path (go backward) when the search on this node finish
+#
+# SP (Short Path):
+#      Starting from the 1st node, iterate possible paths to 2nd node
+
+
+class NotExistException(Exception):
+    pass
+
+class AlreadyExistException(Exception):
+    pass
+
+
+class Vertex(object):
+    def __init__(self, label):
+        self.label = label
+        self.edges = []
+        self.visited = False
+
+class Edge(object):
+    def __init__(self, to, weight):
+        self.to = to    # label
+        self.weight = weight
+
+
+class Graph(object):
+    def __init__(self):
+        self.vertices = []
+
+    def __str__(self):
+        s = ''
+        for v in self.vertices:
+            s += "{:<16}: ".format(v.label)
+            for e in v.edges:
+                to = "->{}({}),".format(e.to, e.weight)
+                s += "{:20}".format(to)
+            s += "\n"
+        return s
+
+    @staticmethod
+    def generate(data: dict[str:tuple], directed):
+        ''' { 'vertex_label11':('vertex_label12', weight), 
+              'vertex_label21':('vertex_label22', weight), }
+        '''   
+        G = Graph()
+        for l1, lst in data.items():
+            for e in lst:
+                G.add_edge(l1, e[0], directed, e[1])
+        return G
+
+    def add_vertex(self, label):
+        v, _ = self.find_vertex(label)
+        if v:
+            raise AlreadyExistException("Vertex already exist.")
+        v = Vertex(label)
+        self.vertices.append(v)
+        return v
+
+    def add_edge(self, label1, label2, directed, weight):
+        ''' Add edge to vertex,
+            If vertex not exist, then create first
+        '''
+        v1, _ = self.find_vertex(label1)
+        if not v1:
+            v1 = Vertex(label1)
+            self.vertices.append(v1)
+            #print("create Vertex: {}".format(v1.label))
+
+        found = False
+        for e in v1.edges:
+            if e.to == label2:       # exist
+                e.weight = weight    # update weight
+                found = True
+                break
+        if not found:
+            e = Edge(label2, weight)
+            v1.edges.append(e)
+            #print("created edge: {}{}{}({})".format(v1.label, '->' if directed else '<->',label2, weight))
+        
+        if not directed:
+            self.add_edge(label2, label1, True, weight)
+
+    def find_vertex(self, label):
+        for i, v in enumerate(self.vertices):
+            if v.label == label:
+                return v, i
+        return None, None
+
+    def find_edge(self, label1, label2, directed):
+        '''
+            return: [ (e1,v1),... ]
+        '''
+        v1, _ = self.find_vertex(label1)
+        if not v1:
+            return False
+        ret = []
+        for e in v1.edges:
+            if e.to.label == label2:
+                ret.append((e, v1))
+                break
+        if directed:
+            return ret
+        v2, _ = self.find_vertex(label2)
+        if v2:
+            for e in v2.edges:
+                if e.label == label1:
+                    ret.append((e, v2))
+        return ret
+
+    def sweep_vertex(self):
+        '''Clean the visited flag'''
+        for v in self.vertices:
+            v.visited = False
+
+    def show(self):
+        print(self)
+
+    def diameter(self, label1, label2):
+        '''Get the diameter (the length of the longest path among all the shortest path) that link any two nodes
+        '''
+        pass
+
+    def dfs(self, label: str, path: list =None) -> list:
+        '''Depth First Search
+          Arg:
+            label: the starting node
+            return: the path
+        '''
+        v, _ = self.find_vertex(label)
+        if not v:
+            raise NotExistException("Cannot find the starting node.")
+        if not path:
+            path = []
+        path.append(v.label)
+        for e in v.edges:
+            ev, _ = self.find_vertex(e.to)
+            if not ev:
+                continue
+            if ev.visited:  #skip
+                continue
+            if e.to not in path:
+                self.dfs(e.to, path)
+        v.visited = True
+        return path
+
+
+    def bfs(self, label: str, path: list = None) -> list:
+        '''Breadth First Search
+          Arg:
+            label: the starting node
+            return: the path
+        '''
+        v, _ = self.find_vertex(label)
+        if not v:
+            raise NotExistException("Cannot find the node {}".format(label))
+        if not path:
+            path = []
+
+        if label not in path:
+            path.append(label)
+
+        for e in v.edges:
+            ev, _ = self.find_vertex(e.to)
+            if not ev:
+                continue
+            if ev.label not in path:
+                path.append(ev.label)
+        v.visited = True
+
+        #print(path)
+        for qlabel in path:     # Note: the path could have been updated by the bfs() call in the loop
+                                #       but that's ok in Python, the 'for' iteration with follow the updated path
+            uv, _ = self.find_vertex(qlabel)
+            if uv and uv.visited:
+                continue
+            self.bfs(uv.label, path)
+
+        return path
+
+    def find_paths(self, label1, label2, found_paths, path=None):
+        ''' Find path from label1 to label2
+          retrun: [[path1], [path2], ..]     each path [label1, label_x..., label2]
+        '''
+        if not path:
+            path = []
+
+        v1, _ = self.find_vertex(label1)
+        v2, _ = self.find_vertex(label2)
+        if not v1 or not v2:
+            raise NotExistException("Node not exist")
+        
+        path.append(label1)
+        #print("path node push {}".format(label1))
+        if label1 == label2:  # found
+            if found_paths is None:
+                found_paths = []
+            found_paths.append(path.copy())
+            #print(found_paths)
+            path.remove(label1);   #print("path node pop {}".format(label1))
+            return
+        if not v1.edges:
+            path.remove(label1)
+            #print("path node pop {}".format(label1))
+            return
+        # clear visited flag for edge nodes
+        for e in v1.edges:
+            ev, _ = self.find_vertex(e.to)
+            ev.visited = False
+        # iterate all adjacencies (edge-nodes)
+        for e in v1.edges:
+            ev, _ = self.find_vertex(e.to)
+            if not ev:
+                continue
+            if ev.label in path:
+                continue
+            if not ev.visited:
+                self.find_paths(ev.label, label2, found_paths, path)
+        v1.visited = True
+        path.remove(v1.label);      # print("path node pop {}".format(label1))
+        return
+
+
+    def short_path(self, label1, label2):
+        '''Get the shortest distance between 2 given vertices'''
+        v1, _ = self.find_vertex(label1)
+        v2, _ = self.find_vertex(label2)
+        if not v1 or not v2:
+            raise NotExistException("Node not exist")
+        paths = []    # [[label1,a1,..label2], [label1,a2,..label2], ...]
+        cost = 0
+        for e in v1.edges:
+            ve, _ = self.find_vertex(e.to)
+            if ve:
+                pass
+                # todo
+        
+
+def test_dfs(G):
+    G.sweep_vertex()
+    node='Chatswood'
+    path = G.dfs(node)
+    print("DFS ({}):".format(node), path)
+
+def test_bfs(G):
+    G.sweep_vertex()
+    path = G.bfs(node)
+    print("BFS ({}):".format(node), path)
+
+def test_findpaths(G):
+    G.sweep_vertex() 
+    l1 = "Epping"; l2="Sydney"
+    paths = []
+    G.find_paths(l1,l2, found_paths=paths, path=None)
+    print("Find paths from {} to {}:".format(l1, l2))
+    if paths:
+        for p in paths:
+            print(p)
+    else:
+        print("not found")
+
+def test():
+    data = {
+        'LaneCove':[('Chatswood', 3), ('Epping', 10), ('Artarmon', 2), ('NorthSydney', 7), ('PennentHill', 26)],
+        'Chatswood':[('LaneCove', 3), ('Sydney', 13), ('NorthSydney',8), ('PennentHill', 20)],
+        'Artarmon':[('Chatswood', 1), ('NorthSydney',6)],
+        'Epping':[('PennentHill', 17)],
+        'BaukhamHills':[('Epping', 14), ('SevenHills', 8), ('PennentHill', 7)],
+        'Sydney':[('Pyrmont', 2), ('NorthSydney',4), ('Epping', 20)],
+    }
+
+    G = Graph.generate(data, directed=False)
+    print(G)
+
+    #test_dfs(G)
+    #test_bfs(G)
+    test_findpaths(G)
+
+
+test()
