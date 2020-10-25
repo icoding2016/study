@@ -25,11 +25,18 @@
 #            If all adjacenct node finished, mark current node 'visited', then move backward (pop it from path and return)
 #       Note: 
 #         1) this is path finding not bfs, so a node could be re-visited from other path options. 
-#            So we clear 'visited' flag for the node's adjacencies before current round of iteration.
+#            So we clear 'visited' flag for the node's adjacencies after current round of iteration.
 #         2) Pop current node from the path (go backward) when the search on this node finish
 #
 # SP (Short Path):
-#      Starting from the 1st node, iterate possible paths to 2nd node
+#      Starting from the 1st node, iterate possible paths to 2nd node (visiting each adjacent node recursively)
+#      Record path-hops and cost (sum) for each path found
+#        For each node: 
+#          Check 'reaching dest': 
+#            if yes, record current path, move backward for next adjacent, 
+#            if no, go through adjacencies with 'find_paths_cost' call. (skip the visited and those already in current path). 
+#            when all adjacencies checked, clear adjacencies' visited flag, and mark current node visited then go backwards.
+#         
 
 
 class NotExistException(Exception):
@@ -230,10 +237,6 @@ class Graph(object):
             path.remove(label1)
             #print("path node pop {}".format(label1))
             return
-        # clear visited flag for edge nodes
-        for e in v1.edges:
-            ev, _ = self.find_vertex(e.to)
-            ev.visited = False
         # iterate all adjacencies (edge-nodes)
         for e in v1.edges:
             ev, _ = self.find_vertex(e.to)
@@ -244,24 +247,100 @@ class Graph(object):
             if not ev.visited:
                 self.find_paths(ev.label, label2, found_paths, path)
         v1.visited = True
+        # clear visited flag for edge nodes
+        for e in v1.edges:
+            ev, _ = self.find_vertex(e.to)
+            ev.visited = False
         path.remove(v1.label);      # print("path node pop {}".format(label1))
         return
 
+    class PathInfo(object):
+        def __init__(self):
+            self.path = []
+            self.cost = []
+            self.total_cost = 0
 
-    def short_path(self, label1, label2):
+        def add_hop(self, label, cost):
+            self.path.append(label)
+            self.cost.append(cost)
+            self.total_cost += cost
+            #print("add hop: {}".format(label))
+
+        def pop(self):
+            v = self.path.pop(len(self.path)-1)
+            self.total_cost -= self.cost.pop(len(self.cost)-1)
+            #print("pop node: {}".format(v))
+            return v
+
+        def copy(self):
+            new_path = Graph.PathInfo()
+            new_path.path = self.path.copy()
+            new_path.cost = self.cost.copy()
+            new_path.total_cost = self.total_cost
+            return new_path
+
+        def show(self):
+            for i in range(len(self.path)):
+                print("{}({}) - ".format(self.path[i], self.cost[i]), end='')
+            print(" total_cost=", self.total_cost)
+
+    def find_paths_cost(self, label1, label2, weight=0, paths=None, path=None):
         '''Get the shortest distance between 2 given vertices'''
         v1, _ = self.find_vertex(label1)
         v2, _ = self.find_vertex(label2)
         if not v1 or not v2:
             raise NotExistException("Node not exist")
-        paths = []    # [[label1,a1,..label2], [label1,a2,..label2], ...]
-        cost = 0
+        
+        if paths is None:
+            paths = []    # [PathInfo1, PathInfo2, ...]
+        if path is None:
+            path = Graph.PathInfo()
+
+        path.add_hop(label1, weight)
+        small=None; sp=None
+
+        if label2 == label1:
+            paths.append(path.copy())
+            path.pop()
+            for p in paths:
+                if not small:
+                    small = p.total_cost
+                elif small > p.total_cost:
+                    small = p.total_cost
+                    sp = p.path
+            return small, sp
+
         for e in v1.edges:
             ve, _ = self.find_vertex(e.to)
-            if ve:
-                pass
-                # todo
-        
+            if not ve:
+                continue
+            if ve.label in path.path:
+                continue
+            if not ve.visited:
+                self.find_paths_cost(ve.label, label2, e.weight, paths, path)
+        v1.visited = True
+        for e in v1.edges:
+            ev, _ = self.find_vertex(e.to)
+            if ev:
+                ev.visited = False
+        path.pop()
+
+
+    def shortest_path(self, label1, label2):
+        paths = []
+        self.find_paths_cost(label1, label2, paths=paths)
+        small = None
+        sp = None
+        for p in paths:
+            if not small:
+                small = p.total_cost
+            elif small > p.total_cost:
+                small = p.total_cost
+                sp = p.path
+        return small, sp, paths
+
+
+
 
 def test_dfs(G):
     G.sweep_vertex()
@@ -274,9 +353,8 @@ def test_bfs(G):
     path = G.bfs(node)
     print("BFS ({}):".format(node), path)
 
-def test_findpaths(G):
+def test_findpaths(G, l1, l2):
     G.sweep_vertex() 
-    l1 = "Epping"; l2="Sydney"
     paths = []
     G.find_paths(l1,l2, found_paths=paths, path=None)
     print("Find paths from {} to {}:".format(l1, l2))
@@ -285,6 +363,15 @@ def test_findpaths(G):
             print(p)
     else:
         print("not found")
+
+def test_short_paths(G, l1, l2):
+    G.sweep_vertex() 
+    c, sp, paths = G.shortest_path(l1,l2)
+    print("Shortest paths from {} to {}:".format(l1, l2), "cost: {}".format(c))
+    for p in paths:
+        p.show()
+    
+
 
 def test():
     data = {
@@ -301,7 +388,9 @@ def test():
 
     #test_dfs(G)
     #test_bfs(G)
-    test_findpaths(G)
+    #test_findpaths(G, l1 = "Epping", l2="Sydney")
+    test_short_paths(G, l1 = "Epping", l2="Sydney")
+    #test_short_paths(G, l1 = "BaukhamHills", l2="Pyrmont")
 
 
 test()
