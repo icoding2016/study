@@ -11,10 +11,10 @@ class BTree(object):
     ORDER = ["IN_ORDER", "PRE_ORDER", "POST_ORDER"]
 
     #def __init__(self, value: int, left: BTree =None, right: BTree = None):   # compiler error 'BTree is not defined'
-    def __init__(self, value = None, left = None, right = None):
+    def __init__(self, value = None):
         self.value = value
-        self.left = left
-        self.right = right
+        self.left = None
+        self.right = None
 
     @staticmethod
     def generate(values):
@@ -143,6 +143,46 @@ class BTree(object):
         for lvl in range(BTree.hight(root)):
             print("level {}: {}".format(lvl, result[lvl]))
 
+    @staticmethod
+    def compare_tree_topo(root1, root2):
+        '''To compare 2 trees structure
+           return True if structure matchs, otherwise False
+        '''
+        # walk the tree and record 'walk pattern' ('l'-left,'r'-right,'b'-back)
+        left = 'L'
+        right = 'R'
+        back = 'B'
+        trail1 = root1.walk_trail()
+        trail2 = root2.walk_trail()
+        print(trail1)
+        print(trail2)
+        return trail1 == trail2
+        
+
+    def walk_trail(self, trail: list = None):
+        if trail is None:
+            trail = []
+        
+        if self.left:
+            trail.append('L')
+            self.left.walk_trail(trail)
+        if self.right:
+            trail.append('R')
+            self.right.walk_trail(trail)
+        trail.append('B')
+        return trail
+
+def test_walk_trail():
+    data1 = [1,3,2,4,7,5,6,8]
+    data2 = [11,13,12,13,17,15,16,18]
+    data3 = [1,3,2,4,8,5,6,7]
+    tree1 = BTree.generate(data1)
+    tree2 = BTree.generate(data2)
+    tree3 = BTree.generate(data3)
+    result = BTree.compare_tree_topo(tree1, tree2)
+    print('tree1 & tree2:','match' if result else 'not match')
+    result = BTree.compare_tree_topo(tree1, tree3)
+    print('tree1 & tree3:','match' if result else 'not match')
 
 
 def test():
@@ -164,4 +204,5 @@ def test():
     bt.print_level(1); print("")
     bt.print_level(2); print("")
 
-test()
+#test()
+test_walk_trail()
