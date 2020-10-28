@@ -9,12 +9,15 @@
 # Input: 'Tact Coa '
 # Output: True (permutations: "tac o cat'; "atc o cta·; etc.).
 # 
+# 
 # Question 2)
 # Extened question: Give all the possible permutation of palindrome for the string.
 # 
 
 from collections import Counter
 
+# Time Complexity: 
+# Space Complexity: 
 def is_palindrome(A):
     B = A.lower()
     C = Counter(B)
@@ -28,7 +31,9 @@ def is_palindrome(A):
     return False, odd
 
 
-
+# Time Complexity: 
+# Space Complexity: 
+#
 def permutate_palindrome(A):
     B = A.lower()            # if do the solution with case sensitive
     C = Counter(B)
@@ -44,8 +49,7 @@ def permutate_palindrome(A):
     s = ''.join([v*int(c/2) for v,c in C.items() if c%2==0])
     if odd and C[odd[0]]>1:       # if the middle character has > 1 number
         s += ''.join(odd[0]*int((C[odd[0]]-1)/2))
-    #print(s)
-    result = jumble_str(s)
+    result = perm_str(s)
     #print(result)
 
     for x in result:
@@ -56,7 +60,14 @@ def permutate_palindrome(A):
                 s = x + x[::-1]
             print('"' + s + '"')
 
-def jumble_str(s, output=None, result=None):
+
+# Time Complexity: 
+#   N*(N-1)*(N-2).. *1 = N! --> O(N!)
+#   Note: Cracking the Coding Interview says that is O(N*N*N!), but I feel it O(N!)
+#         some other idea for O(N!): https://medium.com/@akshitgrover_/why-do-i-think-time-complexity-of-generating-all-permutations-of-a-string-is-o-n-e68c0ecde5c5
+# Space Complexity: 
+#   recursive: (N-1)*(N-2)*1,  N (save/print the string) for each  --> O(N*N!)
+def perm_str(s, output=None, result=None):
     if output is None:
         output = ''
     if result is None:
@@ -68,7 +79,7 @@ def jumble_str(s, output=None, result=None):
         return result
     for i in range(len(s)):
         s1 = s[:i] + s[i+1:]
-        jumble_str(s1, output+s[i], result)
+        perm_str(s1, output+s[i], result)
     return result
 
 def test(A):
