@@ -1,12 +1,8 @@
 # Quick sort
 
 
-A = [2,8,7,1,3,5,6,4]
-A1 = [3,3,3,3,3,3,3,1]
-A2 = [1,2,3,4,5,6]
-A3 = [2,2,2,2,2,2]
-A4 = [1,3,3,3,3,3]
 
+# take A[low] as pivot
 def partition(A, low, high):
     '''
         low: the lower index of the partition of A
@@ -29,18 +25,41 @@ def partition(A, low, high):
             j -= 1
         while j>i and A[i] <= P:     # one of the 2 compare is <=P, one is <P
             i += 1
-        if j != i:
+        if i < j:
             A[i],A[j] = A[j],A[i]
-    if j <= i and A[low] > A[high]:    # beware: the A[low]/[high] condition, the pivot may not be bigger than the last A[i]
+    if j <= i and A[low] > A[i]:    # beware: the A[low]/[high] condition, the pivot may not be bigger than the last A[i]
         A[low],A[i] = A[i], A[low]
     return i
         
+
+# take A[mid] as pivot
+def partition2(A:list, left:int, right:int) -> int:
+    if left == right:
+        return left
+    mid = left + int((right - left)/2)
+    P = A[mid]
+    i = left
+    j = right
+    print(A[i:j+1])
+    while i < j:
+        while i < right and (A[i] < P or i == mid):
+            i += 1
+        while j > left and (A[j] >= P or j == mid):
+            j -= 1 
+        if i < j and A[i] > A[j]:
+            A[i], A[j] = A[j], A[i]
+            print('swap {},{} P={}'.format(A[i], A[j], P))
+    if i != mid:
+        A[i], A[mid] = A[mid], A[i]
+        print(i)
+    return i
 
 def quick_sort(A, low, high):
     #print(A[low:high], low, high)
     if high - low <2:
         return
     i = partition(A, low, high)
+    #i = partition2(A, low, high)
     if i > low:
         quick_sort(A, low, i-1)
     if i+1 < high:
@@ -50,6 +69,12 @@ def quick_sort(A, low, high):
 
 
 if __name__ == "__main__":
+    A = [2,8,7,1,3,5,6,4]
+    A1 = [3,3,3,3,3,3,3,1]
+    A2 = [1,2,3,4,5,6]
+    A3 = [2,2,2,2,2,2]
+    A4 = [1,3,3,3,3,3]
+
     print(A)
     quick_sort(A, 0, len(A)-1)
     print('>>',A)
