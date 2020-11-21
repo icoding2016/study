@@ -6,7 +6,9 @@
 import random
 
 
-# T()
+# T(N+K) -- find min/max-O(N); scatter N into bucket-O(N); sort each bucket- O(n^2/k+n) rouphly O(K);  merge buckets-O(K)
+#           total:  O(2N+2K) => O(N+K)
+# S(K+N) -- K bucket + N elements
 def bucket_sort(data:list, k:int=None) -> list:
     '''bucket sort
        k: bucket size
