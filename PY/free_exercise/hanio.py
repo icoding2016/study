@@ -17,6 +17,7 @@
 from collections import defaultdict
 
 # T(2^n)
+# S(n)
 def hanoi(remain:int, src:list, dst:list, temp:list)->int:
     if remain <= 0:
         return 0
@@ -29,6 +30,9 @@ def hanoi(remain:int, src:list, dst:list, temp:list)->int:
     return steps
 
 
+# DP for hanoi steps counting
+# T(n)
+# S(n)
 def hanoi_steps(remain:int, memo:dict=None)->int:
     if None == memo:
         memo = defaultdict(int)
