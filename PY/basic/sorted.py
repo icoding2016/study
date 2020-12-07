@@ -26,7 +26,8 @@ print(sorted(tl, key=lambda x:x[0]))
 # ll = [[3,7,3],[2,4,6],[0,9,5],[7,2,1]]
 # print(sorted(ll, cmp=lambda x,y:(x[-1]<y[-1])))
 
-
+L=['abc','a','abcd','','ab']
+print(sorted(L, key=len))
 
 
 

@@ -24,8 +24,11 @@
 class Solution:
     def isSubsequence(self, s: str, t: str) -> bool:
         # return self.is_subsequence1(s, t)
-        return self.is_subsequence2(s, t)
+        # return self.is_subsequence2(s, t)
+        return self.is_subsequence3(s, t)
 
+    # T(len(t))
+    # S(1) 
     def is_subsequence1(self, s: str, t: str) -> bool:
         if not s:
             return True
@@ -40,6 +43,8 @@ class Solution:
                 j += 1
         return i == len(s)
 
+    # T(len(t))
+    # S(1)
     def is_subsequence2(self, s:str, t: str) -> bool:
         if not s:
             return True
@@ -50,6 +55,11 @@ class Solution:
             if i < len(s) and c == s[i]:
                 i += 1
         return i == len(s)
+
+    # 
+    def is_subsequence3(self, s:str, t: str) -> bool:
+        it = iter(t)
+        return all(c in it for c in s)
 
 
 def test_fixture(solution):
