@@ -27,9 +27,9 @@ def partition(A, low, high):
             i += 1
         if i < j:
             A[i],A[j] = A[j],A[i]
-    if j <= i and A[low] > A[i]:    # beware: the A[low]/[high] condition, the pivot may not be bigger than the last A[i]
-        A[low],A[i] = A[i], A[low]
-    return i
+    if j <= i and A[low] > A[j]:    # beware: the A[low]/[high] condition, the pivot may not be bigger than the last A[i]
+        A[low],A[j] = A[j], A[low]
+    return j
         
 
 # take A[mid] as pivot
