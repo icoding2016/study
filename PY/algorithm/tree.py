@@ -5,19 +5,24 @@
 # Breadth First (Level Order) Traversal:
 # 
 
+
+import random
 from typing import Iterable
+from typing import TypeVar
+
+T = TypeVar('T')
 
 class BTree(object):
     ORDER = ["IN_ORDER", "PRE_ORDER", "POST_ORDER"]
 
     #def __init__(self, value: int, left: BTree =None, right: BTree = None):   # compiler error 'BTree is not defined'
-    def __init__(self, value = None):
+    def __init__(self, value:T = None) -> None:
         self.value = value
         self.left = None
         self.right = None
 
     @staticmethod
-    def generate(values):
+    def generate(values, sorted=True):
         '''Generate a binary tree from the input values
            values:  an iterable object containing the values of the tree nodes
            return the root node of the tree
@@ -26,9 +31,14 @@ class BTree(object):
             print("input values not iterable.")
             return 
         node = BTree(value=None)
-        for x in values:
-            node.insert(x)
-        return node
+        if sorted:
+            for x in values:
+                node.insert(x)
+            return node
+        else:
+            for x in values:
+                node.insert_random(x)
+            return node
 
     def insert(self, value):
         if not self.value:
@@ -44,6 +54,36 @@ class BTree(object):
                 self.right.insert(value)
             else:
                 self.right = BTree(value = value)
+
+    def insert_random(self, value):
+        if not self.value:
+            self.value = value
+            return
+        r = random.random()*10
+        node = self.left if r < 5 else self.right
+        if r < 5:
+            if not self.left:
+                self.left = BTree(value)
+                return
+            else:
+                self.left.insert_random(value)
+        else:
+            if self.right:
+                self.right.insert(value)
+            else:
+                self.right = BTree(value = value)
+
+    def find_node(self, data:T) -> 'BTree':
+        if self.value == data:
+            return self
+        node = None
+        if self.left:
+            node = self.left.find_node(data)
+            if node:
+                return node
+        if self.right:
+            node =self.right.find_node(data)
+        return node
 
     def show(self):
         print(self.value)
@@ -113,7 +153,7 @@ class BTree(object):
     def hight(tree):
         ''' Count the tree hight
             Time Complexity: O(2^L) (L=level) -- 1+2+4+..+2^(L-1)=2^L-1
-                             O(N)  (L=Node count).   N=2^L or L=LogN
+                             O(N)   (N=Node count).   N=2^L or L=LogN
             Space Complexity: O(N)?
         '''
         if not tree.left and not tree.right:
@@ -127,6 +167,28 @@ class BTree(object):
             r_hight = BTree.hight(tree.right) + 1
 
         return l_hight if l_hight > r_hight else r_hight
+
+    @staticmethod
+    def get_tree_level_data(root:'BTree', level:int = 0, data:dict[int:list] = {}) -> list[T]:
+        if not root:
+            return data
+
+        if level in data:
+            data[level].append(root.value)
+        else:
+            data[level] = [root.value]
+
+        if root.left:
+            BTree.get_tree_level_data(root.left, level + 1, data)
+        if root.right:
+            BTree.get_tree_level_data(root.right, level + 1, data)
+        return data
+
+    @staticmethod
+    def print_tree(root:'BTree') -> None:
+        data = BTree.get_tree_level_data(root)
+        for i in range(len(data)):
+            print(data[i])
         
 
     @staticmethod
@@ -172,6 +234,26 @@ class BTree(object):
         trail.append('B')
         return trail
 
+    def get_random_node(self) -> 'BTree':
+        ''' this is not a good solution, 'hight'-steps doesn't randomize well when the tre is not balanced '''
+        steps = random.randint(1, BTree.hight(self))
+        node = self
+        while steps and node:
+            if steps <= 1:
+                return node
+            if random.randint(0,1):
+                if node.right:
+                    node = node.right
+                else:
+                    return node
+            else:
+                if node.left:
+                    node = node.left
+                else:
+                    return node
+            steps -= 1
+        return self
+
 def test_walk_trail():
     data1 = [1,3,2,4,7,5,6,8]
     data2 = [11,13,12,13,17,15,16,18]
@@ -188,6 +270,7 @@ def test_walk_trail():
 def test():
     values = [5,1,3,7,2,9,4,8,11,0,6,10]
     bt = BTree.generate(values)
+    print("find node 7", bt.find_node(7))
     print('-'*30, "IN_ORDER")
     bt.walk()
     print('-'*30, "PRE_ORDER")
@@ -204,5 +287,12 @@ def test():
     bt.print_level(1); print("")
     bt.print_level(2); print("")
 
-#test()
-test_walk_trail()
+    test_walk_trail()
+
+    # get_random_node
+    print('get_random_node')
+    for i in range(10):
+        print(bt.get_random_node().value, end=',')
+    print('')
+
+test()

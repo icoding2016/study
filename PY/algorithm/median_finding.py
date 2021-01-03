@@ -10,6 +10,11 @@
 # Note:
 # - the median of 1~N is (N+1)/2, so index is len(N)/2 of [0,N-1]
 # - When len(A) < 3, we can directly handle the sort and median
+# 
+# Time Complexity:  
+#     Worst-case:O(N*N),  best(LogN), 
+# Space Complexity:
+#     
 
 def median_finding(A:list, k:int =None):
     '''
@@ -47,13 +52,19 @@ def median_finding(A:list, k:int =None):
 def median_finding_by_sort(A):
     return sorted(A)[int(len(A)/2)]
 
+def mean(A):
+    sum=0
+    for x in A:
+        sum += x
+    return sum/len(A)
 
 def test(A):
     print('-'*40)
     print(A)
     r = median_finding(A)
-    print(r,end=' vs:')
-    print(median_finding_by_sort(A))   # checking with another algorithm
+    print('median:', r,end=' vs:')
+    print(median_finding_by_sort(A), end='  ')   # checking with another algorithm
+    print('mean:', mean(A))
 
 
 
