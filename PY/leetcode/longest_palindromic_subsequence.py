@@ -40,8 +40,10 @@ class Solution:
         if len(s) <= 1:
             return len(s)
         #return self.countkPalindromeSub(s)
-        return self.countkPalindromeSub_dp(s)
+        return self.countkPalindromeSub_memo(s)
 
+    # T(C*2^S)   C=parlindrone char number, S=skipped char num,   
+    #            best O(N),  worst O(2^N)
     def countkPalindromeSub(self, s:str) -> int:
         if len(s) == 0:
             return 0
@@ -64,7 +66,8 @@ class Solution:
             count += 1
         return count
 
-    def countkPalindromeSub_dp(self, s:str, memo:dict=None) -> int:
+    # T(C*2^S)
+    def countkPalindromeSub_memo(self, s:str, memo:dict=None) -> int:
         if len(s) < 2:
             return len(s)
         if None == memo:
@@ -80,14 +83,16 @@ class Solution:
                 l += 1
                 r -= 1
             else:
-                c1 = self.countkPalindromeSub_dp(s[l:r], memo)
-                c2 = self.countkPalindromeSub_dp(s[l+1:r+1], memo)
+                c1 = self.countkPalindromeSub_memo(s[l:r], memo)
+                c2 = self.countkPalindromeSub_memo(s[l+1:r+1], memo)
                 count += max(c1, c2)
                 break
         if l == r:
             count += 1
         memo[s] = count
         return count
+
+
 
 
 def test_fixture(solution):
