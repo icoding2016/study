@@ -50,10 +50,10 @@ class Solution:
         self.vals = set([str(x) for x in range(1,10)])
 
     def isValidSudoku(self, board: List[List[str]]) -> bool:
-        return self.isValidSudoku1(board)
+        return self.isValidSudoku2(board)
 
     # bf2:
-    # T(N^2)    # row: N*(N+N+N)=3N^2 -> O(N^2),  col: 3N^2, 
+    # T(N^2)    # 3N^2 -> O(N^2)
     def isValidSudoku1(self, board: List[List[str]]) -> bool:
         C = len(board[0])
         R = len(board)
@@ -87,38 +87,19 @@ class Solution:
                         lb.append(v)
         return True
 
-    # bf2:
-    # T(N^2)    # row: N*(N+N+N)=3N^2 -> O(N^2),  col: 3N^2, 
+    # 
     def isValidSudoku2(self, board: List[List[str]]) -> bool:
         C = len(board[0])
         R = len(board)
+        exist = []
         for r in range(R):   # row
-            lr = [x for x in board[r] if x != "."]
-            sr = set(lr)
-            if len(lr) != len(sr):
-                return False
-            if not set.issubset(sr, self.vals):
-                return False
-        # check col
-        for c in range(C):
-            lc = [board[r][c] for r in range(R) if board[r][c] != "."]
-            sc = set(lc)
-            if len(lc) != len(sc):
-                return False
-            if not set.issubset(sc, self.vals):
-                return False
-        # check subblock
-        for r in range(R//3):
-            for c in range(C//3):
-                lb = []
-                for i in range(3):
-                    for j in range(3):
-                        v = board[r*3+j][c*3+i]
-                        if v == ".":
-                            continue
-                        if v in lb or v not in self.vals:
-                            return False
-                        lb.append(v)
+            for c in range(C):
+                v = board[r][c]
+                if v == ".":
+                    continue
+                if any([(r,v) in exist, (v,c) in exist, (r//3, c//3, v) in exist]) or v not in self.vals:
+                    return False
+                exist.extend([(r,v), (v,c), (r//3, c//3, v)])
         return True
 
 
