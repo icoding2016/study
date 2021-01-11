@@ -70,7 +70,10 @@ def test():
         print("pop: ", s.pop())
         s.show()
         print("min: ", s.minimum())
-
+    try:
+        s.pop()
+    except EmptyStackException:
+        print("Caught EmptyStackException")
 
 test()    
 
