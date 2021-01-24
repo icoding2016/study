@@ -65,6 +65,22 @@ class BNode(object):
             else:
                 break         
                     
+    def level_walk(self, lvl)->None:
+        print(self._level_walk(lvl))
+
+
+    def _level_walk(self, lvl, output=None)->list:
+        if None == output:
+            output = []
+        if lvl == 0:
+            output.append(self.val)
+            return output
+        if lvl > 0:
+            if self.left:
+                self.left._level_walk(lvl-1, output)
+            if self.right:
+                self.right._level_walk(lvl-1, output)
+        return output
 
 
 def test():
@@ -72,7 +88,10 @@ def test():
     b = BNode.generate(d)
     #b.inorder()
     b.inorder_imperative()
-
+    print("lvl walk")
+    b.level_walk(0)
+    b.level_walk(1)
+    b.level_walk(2)
 
 
 test()
