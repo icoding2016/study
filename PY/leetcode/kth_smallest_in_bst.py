@@ -82,6 +82,8 @@ class BTree:
             print(data[i])
 
 
+# T(logN+K)  -- logN to reach the min, then K more steps to reach the Kth
+# S(logN)    -- Tree depth (Stack)
 class Solution:
     def kthSmallest(self, root: BTree, k: int) -> int:
         return self._kthSmallest(root, k)
