@@ -5,7 +5,7 @@
 # >> [1, 2, 3, 5, 6, 8, 9, 10], [3, 5]
 
 
-def combine(l1:list, l2:list)->(list, list):
+def combine1(l1:list, l2:list)->(list, list):
     # s1 = set(l1)
     # s2 = set(l2)
     s1 = s2 = None
@@ -35,19 +35,33 @@ def combine(l1:list, l2:list)->(list, list):
                 x = s1[i]
                 i += 1
                 j += 1
-                
-        if x in c: 
+                if x not in d:
+                    d.append(x)
+
+        if x not in c:
+            c.append(x)    
+        else: 
             if x not in d:
                 d.append(x)
-        else:
-            c.append(x)
+    return c, d
+
+
+from collections import Counter
+def combine2(l1:list, l2:list)->(set, list):
+    c = set.union(set(l1),set(l2))
+    ct = Counter(l1+l2)
+    d = [x for x in ct if ct[x]>1]
     return c, d
 
 
 def test():
     l1=[1,3,5,5,8,10]
     l2=[2,3,3,6,9,10]
-    print(combine(l1,l2))
+    print(l1)
+    print(l2)
+    print('>>>')
+    print(combine1(l1,l2))
+    print(combine2(l1,l2))
 
 
 test()
