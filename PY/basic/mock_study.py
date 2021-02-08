@@ -1,3 +1,11 @@
+# 
+# mock.patch vs mock.patch.object:
+#   mock.patch() takes a string which will be resolved to an object when applying the patch, mock.patch.object() takes a direct reference.
+#   This means that mock.patch() doesn't require that you import the object before patching, 
+#   while mock.patch.object() does require that you import before patching.
+#   The latter is then easier to use if you already have a reference to the object.
+
+
 import os
 import sys
 
@@ -38,6 +46,7 @@ class Tester(unittest.TestCase):
 
 
     # Note: the sequence of mock.patch
+    #       the closer the decorator is to the function definition, the earlier it is in the parameter list.
     @mock.patch("sys.modules", return_value="a fake result for sys.modules")
     @mock.patch("sys.version")
     @mock.patch("os.path")
@@ -47,6 +56,12 @@ class Tester(unittest.TestCase):
         print("mock1 (os.path): {}".format(os.path()))
         print("mock2 (sys.version): {}".format(sys.version()))
         print("mock3 (sys.modules): {}".format(sys.modules()))
+
+    @mock.patch.object(sys, 'version', return_value='4.2.2')
+    @mock.patch('sys.version', return_value='4.1.3')
+    def testMockObj(self, mock1, mockobj1):
+        print(mock1())
+        print(mockobj1())
 
 def test_mockMethod():
     tester = Tester()    
@@ -75,6 +90,7 @@ def test_mockPatch():
     tester.testPatchA()
     tester.testPatchB1()
     tester.testMultiPatch()
+    tester.testMockObj()
 
 def test():
     test_mockMethod()
