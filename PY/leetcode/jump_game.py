@@ -34,21 +34,45 @@ class Solution:
         canReach[0] = True
         for i in range(N-1):
             for s in range(nums[i]+1):  # step from current nums[i]
-                if canReach[i] and i+s< N:
-                    canReach[i+s] = True
+                if canReach[i]:
+                    if i+s == N-1:
+                        return True
+                    elif i+s< N:
+                        canReach[i+s] = True
+                    else:
+                        break
                 else:
                     continue
         return canReach[N-1]
-        
-    # backwards tracking
+
+    # O(N)
     def canJump2(self, nums: List[int]) -> bool:
+        N = len(nums)
+        canReach = [False for i in range(N)]
+        canReach[0] = True
+        max_reach = 0
+        for i, s in enumerate(nums):
+            if i > max_reach:
+                return False
+            max_reach = max(max_reach, i+s)
+            if max_reach >= N-1:
+                return True
+        return True
+
+    # backwards tracking  ?? not work
+    def canJump3(self, nums: List[int]) -> bool:
         N = len(nums)
         canReach = [False for i in range(N)]
         canReach[0] = True
         for i in range(N-1,-1,-1):
             for s in range(nums[i]+1):  # step from current nums[i]
-                if canReach[i] and i+s< N:
-                    canReach[i+s] = True
+                if canReach[i]:
+                    if i+s == N-1:
+                        return True
+                    elif i+s< N:
+                        canReach[i+s] = True
+                    else:
+                        break
                 else:
                     continue
         return canReach[N-1]
@@ -61,12 +85,14 @@ def test_fixture(solution):
         (([3,2,1,0,4], ), False),
         (([1,1,0,1,4], ), False),
         (([0], ), True),
+        (([n for n in range(1000,0,-1)]+[1],), True),
+        (([n for n in range(1000,0,-1)]+[0,1],), False),
     ]
 
     for i in range(len(testdata)):
         ret = solution.canJump(*testdata[i][0])
         exp = testdata[i][1]
-        print("{} -> \t{} \t expect {}".format(testdata[i][0], ret, exp), end='\t')
+        print("{} -> \t{} \t expect {}".format(testdata[i][0] if len(testdata[i][0][0])<7 else 'testdata[i][0]', ret, exp), end='\t')
         print("{}".format('pass' if ret==exp else 'fail'))
 
 
