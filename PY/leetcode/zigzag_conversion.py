@@ -44,6 +44,11 @@
 
 class Solution:
     def convert(self, s: str, numRows: int) -> str:
+        return self.convert2(s, numRows)
+
+    # simulate & follow the procedure
+    # O(N)
+    def convert1(self, s: str, numRows: int) -> str:
         if not s:
             return []
         if numRows == 1:
@@ -61,6 +66,24 @@ class Solution:
             rows[row] += s[i]
         return ''.join(rows)
 
+    # math
+    #   Each repeating section contain   K=(R*2-2) elements, R=numRows
+    # for x(for col) and y(for row) starting from 0:  y=f(x)
+    # y = x%K       (K*n <= x < K*n+R)
+    #   = 2R-x%K-2  (K*n+R <= x < 2k*n)
+    #   
+    def convert2(self, s: str, numRows: int) -> str:
+        if numRows == 1:
+            return s
+        K = numRows*2-2
+        S = ['' for i in range(numRows)]
+        for i, v in enumerate(s):
+            if i%K < numRows:
+                y = i%K
+            else:
+                y = 2*numRows - i%K - 2
+            S[y] += v
+        return ''.join(S)
 
 def test_fixture(solution):
     input = [
