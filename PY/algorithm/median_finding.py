@@ -1,4 +1,7 @@
 # median finding Algorithm
+# Given an array A = [1,...,n]A=[1,...,n] of nn numbers and an index i,i, where 1 ≤ i ≤ n,1≤i≤n, find the ith smallest element of A.
+# 
+# A typical case is to find the median value of an unsorted array. 
 # - pick a pivot, put smaller to the left, bigger to the right.
 # - if pivot in the middle 'len(A)/2', then pivot is the median
 # - if pivot < middle position (median is in the right side), keep searching in the right
