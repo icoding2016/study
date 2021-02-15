@@ -14,6 +14,10 @@ import unittest.mock as mock
 
 
 class EgClass(object):
+    def __init__(self):
+        self.attr1=None
+        self.attr2=None
+
     def A(self):
         print("EgClass::A()")
         return 'A'
@@ -63,6 +67,7 @@ class Tester(unittest.TestCase):
         print(mock1())
         print(mockobj1())
 
+
 def test_mockMethod():
     tester = Tester()    
 
@@ -80,9 +85,10 @@ def test_mockMethod():
 
 
 def test_mockClass():
-    tester = Tester()    
-    m = mock.MagicMock()
-
+    m1 = mock.Mock(spec=EgClass, attr1='ATTR1', attr2='ATTR2')
+    print(m1.attr1)
+    print(m1.attr2)
+    #m = mock.MagicMock()
     # Todo:
 
 def test_mockPatch():
@@ -95,6 +101,7 @@ def test_mockPatch():
 def test():
     test_mockMethod()
     test_mockPatch()
+    test_mockClass()
 
 
 
