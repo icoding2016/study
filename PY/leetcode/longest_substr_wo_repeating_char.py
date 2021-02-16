@@ -62,7 +62,7 @@ class Solution:
     #          d) (maxlen_i, (start, end))        if end<i and s[i]!=s[i+1], and maxlen_i > cur[0]+1,  update cur
     #          e) (maxlen_i, (start, end))        if end<i and s[i]==s[i+1], update cur(1,(i+1,i+1))
     #          f) (cur[0]+1, (cur-s, cur-e))      if end<i and s[i]!=s[i+1], and maxlen_i <= cur[0]+1,  update cur, max
-    #   
+    # T(N*N)    loop-N, inside the loop, worst case N for for the case .rfind() or s[i] in s[ms:me+1]
     def longestSubstr_dp(self, s: str) -> int:
         if not s:
             return 0
