@@ -13,19 +13,37 @@ _CFG_FILE_NAME = 'config.json'
 
 _DEF_CFG = {
     'kafka' : {
-        'broker':'127.0.0.1:9092',  # plantext: 'localhost:9092',  ssl: 'localhost:9093'
-        'sec_protocol':'ssl',
+        ## For local debugging (local kafka server)
+        # 'broker':'127.0.0.1:9092',  # plantext: 'localhost:9092',  ssl: 'localhost:9093'
+        # 'sec_protocol':'PLAINTEXT',
+        # 'ssl_ca':'ca.pem',
+        # 'ssl_cert':'service.cert',
+        # 'ssl_key':'service.key',
+        # 'topic':'topic-web-mon',
+
+        ## for cloud service
+        'broker':'kafka-1523402e-jerry-cffe.aivencloud.com:13430',
+        'sec_protocol':'SSL',
         'ssl_ca':'ca.pem',
-        'ssl_cert':'kafka.crt',
-        'ssl_key':'kafka.key',
+        'ssl_cert':'service.cert',
+        'ssl_key':'service.key',
         'topic':'topic-web-mon',
     },
     'db': {
-        'host':'127.0.0.1',
-        'port':'5432',
-        'user':'webmon_user',
-        'password':'webmon_pwd',
-        'database':'webmon_db',
+        ## For local debugging (local postgresql DB)
+        # 'host':'127.0.0.1',
+        # 'port':'5432',
+        # 'user':'webmon_user',
+        # 'password':'webmon_pwd',
+        # 'database':'webmon_db',
+        # 'table':'webmon_records'
+
+        ## For cloud service
+        'host':'psql-service-xy-jerry-cffe.aivencloud.com',
+        'port':'13428',
+        'user':'avnadmin',
+        'password':'tdzaa56ioi3df2fy',
+        'database':'defaultdb',
         'table':'webmon_records'
     },
     'webmon' : [
@@ -39,6 +57,7 @@ _DEF_CFG = {
             'pattern':r'\(window\.location\.hostname\.match\(\"aiven\.io\"\)\)',
             'interval':20,
         },
+        # more website config...
     ],
 }
 

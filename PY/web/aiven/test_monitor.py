@@ -55,7 +55,7 @@ class UTest(unittest.TestCase):
         mock_df.return_value = mock_conn
         monitor = WebMonitor()
         monitor.start()
-        time.sleep(31)
+        time.sleep(61)
         #mock_conn.execute.assert_called()
         mock_producer.send.assert_called()
         mock_consumer.__iter__.assert_called()
