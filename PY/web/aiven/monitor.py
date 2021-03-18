@@ -45,10 +45,10 @@ class WebMonitor(object):
                 self._producer.close()
             self._producer = KafkaProducer(
                 bootstrap_servers = self._cfg['kafka']['broker'],
-                # security_protocol = self._cfg['kafka']['sec_protocol'],
-                # ssl_cafile = self._cfg['kafka']["ssl_ca"],
-                # ssl_certfile = self._cfg['kafka']["ssl_cert"],
-                # ssl_keyfile = self._cfg['kafka']["ssl_key"],
+                security_protocol = self._cfg['kafka']['sec_protocol'],
+                ssl_cafile = self._cfg['kafka']["ssl_ca"],
+                ssl_certfile = self._cfg['kafka']["ssl_cert"],
+                ssl_keyfile = self._cfg['kafka']["ssl_key"],
                 value_serializer = pickle.dumps,
                 )
         except Exception as e:
@@ -58,10 +58,10 @@ class WebMonitor(object):
             self._consumer = KafkaConsumer(
                 self._cfg['kafka']['topic'],
                 bootstrap_servers = self._cfg['kafka']['broker'],
-                # security_protocol = self._cfg['kafka']['sec_protocol'],
-                # ssl_cafile = self._cfg['kafka']["ssl_ca"],
-                # ssl_certfile = self._cfg['kafka']["ssl_cert"],
-                # ssl_keyfile = self._cfg['kafka']["ssl_key"],
+                security_protocol = self._cfg['kafka']['sec_protocol'],
+                ssl_cafile = self._cfg['kafka']["ssl_ca"],
+                ssl_certfile = self._cfg['kafka']["ssl_cert"],
+                ssl_keyfile = self._cfg['kafka']["ssl_key"],
                 value_deserializer = pickle.loads,
                 )
         except Exception as e:

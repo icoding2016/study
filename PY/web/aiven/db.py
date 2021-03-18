@@ -27,28 +27,18 @@ class WebMonDB(object):
                     host = self._dbcfg['host'],
                     port = self._dbcfg['port'],
                     user = self._dbcfg['user'],
-                    password = self._dbcfg['password'])
+                    password = self._dbcfg['password'],
+                    database = self._dbcfg["database"])
             else:
                 conn = self._dbconn
             # create the database if not exist
-            cur = conn.cursor()
-            cur.execute('SELECT datname FROM pg_database;')
-            fetched = cur.fetchall()
-            dbs = [rec[0] for rec in fetched]
-            if self._dbcfg['database'] not in dbs:
+            if not self._check_db_exist(conn, self._dbcfg["database"]):
+                cur = conn.cursor()
                 cur.execute(f'CREATE DATABASE {self._dbcfg["database"]};')
                 conn.commit()
                 logging.info(f'Database {self._dbcfg["database"]} not exist, create now.')
-                cur.close()
-                conn.close()
-                # create table
-                conn = self._connect(
-                    host = self._dbcfg['host'],
-                    port = self._dbcfg['port'],
-                    user = self._dbcfg['user'],
-                    password = self._dbcfg['password'],
-                    database = self._dbcfg['database']
-                    )
+            # create table if not exist
+            if not self._check_table_exist(dbconn=conn, table=self._dbcfg["table"]):
                 cur = conn.cursor()
                 cur.execute(f'CREATE TABLE {self._dbcfg["table"]} (url TEXT, success BOOLEAN, errcode TEXT, rsptime TEXT)')
                 conn.commit()
@@ -86,7 +76,38 @@ class WebMonDB(object):
             if self._dbconn:
                 self._dbconn.close()
                 self._dbconn = None
+            raise e
         return self._dbconn
+
+    def _check_table_exist(self, dbconn, table):
+        exist = True
+        if dbconn:
+            try:
+                cur = dbconn.cursor()
+                cur.execute(f"""SELECT * from information_schema.tables
+                            WHERE TABLE_NAME='{table}'""")
+                exist = bool(cur.rowcount)
+            except Exception as e:
+                logging.exception(f'Database check table error: {e}')
+                raise e
+        return exist
+
+    def _check_db_exist(self, dbconn, db):
+        exist = True
+        if dbconn:
+            try:
+                cur = dbconn.cursor()
+                cur.execute('SELECT datname FROM pg_database;')
+                fetched = cur.fetchall()
+                dbs = [rec[0] for rec in fetched]
+                if db in dbs:
+                    exist = True
+                else:
+                    exist = False
+            except Exception as e:
+                logging.exception(f'Database check table error: {e}')
+                raise e
+        return exist
 
     def connection(self):
         """Get current connection to the database

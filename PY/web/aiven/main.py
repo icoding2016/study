@@ -1,4 +1,5 @@
 from monitor import WebMonitor
+import logging
 import sys
 
 
@@ -8,5 +9,6 @@ if __name__ == '__main__':
     try:
         user_input = input()
     except KeyboardInterrupt:
+        logging.info("KeyboardInterrupt to stop the running.")
         monitor.terminate()
         sys.exit(0)
