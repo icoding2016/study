@@ -16,7 +16,7 @@ network, produces metrics about this and passes these events through an Aiven Ka
   - An regular expression used as an extra condition for the check (optional)
   - Checking interval
   
- The parameters are configurable through the config file (config.json)
+   The parameters are configurable through the config file (config.json)
 
 - Kafka
 
