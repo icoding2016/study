@@ -9,6 +9,7 @@ network, produces metrics about this and passes these events through an Aiven Ka
 ### Features & Implementation
 
 - Website(s) availability check
+
   Support peiriodical check for multiple websites. (one thread for each)
   There are 3 configurable parameters for each website to be monitored
   - URL
@@ -18,20 +19,27 @@ network, produces metrics about this and passes these events through an Aiven Ka
  The parameters are configurable through the config file (config.json)
 
 - Kafka
+
   Kafka service is used to stream the metrics.
 
 - Database
+
   A PostgreSQL database is used to save the metrics.
   The database and table used for the the metrics will be created if they are not exist when the program is running.
   
 - Configurations
+
   The basic information for Kafka and database services is configurable through the config file. E.g. host/post, user/password for the service.
   The config file will be generated with default values at the first run if it is not in the current folder.
-  
+
+
 ### Run & test the code 
+
 - Run the code:
+
   python main.py
 - unit test
+
   python -m unittest discover .
 
 Note:
