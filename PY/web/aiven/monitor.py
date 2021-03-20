@@ -97,7 +97,16 @@ class WebMonitor(object):
             chker.terminate()
         if self._metrics_recorder:
             self._metrics_recorder.terminate()
-
+        try:
+            if self._producer:
+                self._producer.flush()
+                self._producer.close()
+                logging.info('Kafka producer closed.')
+            if self._consumer:
+                self._consumer.close()
+                logging.info('Kafka consumer closed.')
+        except Exception as e:
+            logging.exception(f'Stop WebMonitor exception {e}')
 
 class WebCheckTask(threading.Thread):
     """The thread checking a specific website and produce metrics periodically"""
@@ -107,23 +116,32 @@ class WebCheckTask(threading.Thread):
         super().__init__()
         self._producer = producer
         self._topic = topic
+        self._url = url
         self._checker = WebChecker(url, pattern)
         self._interval = interval
         self._finish = False
 
     def run(self) -> None:
+        last_time = time.time()
         while not self._finish:
+            delta = int(time.time() - last_time)
+            if delta < self._interval:   # check interval every 1 sec
+                
+                time.sleep(1)
+                continue
             try:
                 metrics = self._checker.check()
                 self._producer.send(topic=self._topic, value=metrics)
                 logging.info(f'Producer sending: {metrics}')
+                last_time = time.time()
             except Exception as e:
                 logging.exception(f'Web check task exception: {e}')
-            time.sleep(self._interval)
+                raise e
+        logging.info(f'WebCheckTask for {self._url} ends.')
 
     def terminate(self) -> None:
         self._finish = True
-        logging.info(f'Terminate the web check task for {self._checker.url}')
+        logging.info(f'Terminating the web check task for {self._checker.url}')
 
 
 class MetricsRecTask(threading.Thread):
@@ -137,8 +155,6 @@ class MetricsRecTask(threading.Thread):
         self._db = db    # Only connect db when the task start running
 
     def run(self) -> None:
-        if not self._db:
-            self._db = db
         while not self._finish:
             try:
                 if self._consumer:
@@ -150,9 +166,11 @@ class MetricsRecTask(threading.Thread):
                         logging.info(f'Write to DB')
             except Exception as e:
                 logging.exception(f'Metric record task exception {e}')
+                self._db.disconnect()
                 raise e
-
+        self._db.disconnect()
+        logging.info('MetricsRecTask ends.')
 
     def terminate(self) -> None:
         self._finish = True
-        logging.info('Terminate the metric record task.')
+        logging.info('Terminating the metric record task.')
