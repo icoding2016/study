@@ -19,7 +19,7 @@ _DEF_CFG = {
         # 'ssl_ca':'ca.pem',
         # 'ssl_cert':'service.cert',
         # 'ssl_key':'service.key',
-        # 'topic':'topic-web-mon',
+        # 'topic':'web-mon',
 
         ## for cloud service
         'broker':'kafka-1523402e-jerry-cffe.aivencloud.com:13430',
@@ -27,7 +27,7 @@ _DEF_CFG = {
         'ssl_ca':'ca.pem',
         'ssl_cert':'service.cert',
         'ssl_key':'service.key',
-        'topic':'topic-web-mon',
+        'topic':'web-mon',
     },
     'db': {
         ## For local debugging (local postgresql DB)
