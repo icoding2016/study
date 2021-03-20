@@ -5,7 +5,7 @@
     "ssl_ca":"ca.pem",
     "ssl_cert":"service.cert",
     "ssl_key":"service.key",
-    "topic":"topic-web-mon"
+    "topic":"web-mon"
   },
   "db":{
     "host":"psql-service-xy-jerry-cffe.aivencloud.com",
