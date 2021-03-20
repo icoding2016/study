@@ -57,6 +57,7 @@ class WebMonitor(object):
         try:
             self._consumer = KafkaConsumer(
                 self._cfg['kafka']['topic'],
+                group_id = self._cfg['kafka']['topic'] + '_group',
                 bootstrap_servers = self._cfg['kafka']['broker'],
                 security_protocol = self._cfg['kafka']['sec_protocol'],
                 ssl_cafile = self._cfg['kafka']["ssl_ca"],
@@ -120,6 +121,7 @@ class WebCheckTask(threading.Thread):
         self._checker = WebChecker(url, pattern)
         self._interval = interval
         self._finish = False
+        self._stopped = False
 
     def run(self) -> None:
         last_time = time.time()
@@ -136,13 +138,17 @@ class WebCheckTask(threading.Thread):
                 last_time = time.time()
             except Exception as e:
                 logging.exception(f'Web check task exception: {e}')
+                self._stopped = True
                 raise e
-        logging.info(f'WebCheckTask for {self._url} ends.')
+        self._stopped = True
+        #logging.info(f'WebCheckTask for {self._url} ends.')
 
     def terminate(self) -> None:
         self._finish = True
-        logging.info(f'Terminating the web check task for {self._checker.url}')
-
+        logging.info(f'Stopping the web check task for {self._url}')
+        while not self._stopped:  # wait for self._run to finish
+            time.sleep(0.1)
+        logging.info('Done.')
 
 class MetricsRecTask(threading.Thread):
     """The thread to check/record the metrics in kafka topics."""
@@ -153,24 +159,31 @@ class MetricsRecTask(threading.Thread):
         self._finish = False
         assert db, 'MetricsRecTask: Need a valid WebMonDB instance'
         self._db = db    # Only connect db when the task start running
+        self._stopped = False
 
     def run(self) -> None:
         while not self._finish:
             try:
                 if self._consumer:
-                    self._consumer.poll()
-                    for msg in self._consumer:
-                        metrics = msg.value
-                        logging.info(f'Consumer receiving: {metrics}')
-                        self._db.write(metrics)
-                        logging.info(f'Write to DB')
+                    msgs = self._consumer.poll()  # returns records: {TopicPartition: [messages]}
+                    for recs in msgs.values():    # recs: [ConsumerRecord(), ...]
+                        for rec in recs:          
+                            metrics = rec.value
+                            logging.info(f'Consumer receiving: {metrics}')
+                            self._db.write(metrics)
+                            logging.info(f'Write to DB')
             except Exception as e:
                 logging.exception(f'Metric record task exception {e}')
                 self._db.disconnect()
+                self._stopped = True
                 raise e
         self._db.disconnect()
-        logging.info('MetricsRecTask ends.')
+        self._stopped = True
+        #logging.info('MetricsRecTask ends.')
 
     def terminate(self) -> None:
         self._finish = True
-        logging.info('Terminating the metric record task.')
+        logging.info('Stopping the metric record task...')
+        while not self._stopped:  # wait for self._run to finish
+            time.sleep(0.1)
+        logging.info('Done.')
