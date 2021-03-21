@@ -16,7 +16,6 @@ setup(
     author_email = 'icoding2016@gmail.com',
     url = 'https://github.com/icoding2016/study/tree/master/PY/web/aiven',
 
-    py_modules = ['webmon'],
     python_requires = '>=3.6',
     install_requires = [
         'requests>=2.19.0',
@@ -24,11 +23,12 @@ setup(
         'psycopg2>=2.8.0',
     ],
 
-    # package_dir = {'': 'webmon'},
-    packages = ['webmon'],
-    data_files = [
-        ('config', ['config.json'],),
-    ],
+    package_dir = {'': 'webmon'},
+    packages = [''],
+    # py_modules = ['monitor', ],
+    package_data  = {
+        '': ['config.json'],
+    },
 )
 
 
