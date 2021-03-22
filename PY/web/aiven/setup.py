@@ -1,7 +1,7 @@
 from setuptools import setup
 from setuptools import find_packages
 
-VERSION = '0.1.0'
+VERSION = '0.0.1'
 
 with open('readme.md') as f:
     LONG_DESCRIPTION = f.read()
@@ -9,7 +9,7 @@ with open('readme.md') as f:
 setup(
     name = 'webmon_demo',
     version = VERSION,
-    description = 'A website monitor demo',
+    description = 'A website monitor demo. Exercise only, dont use :)',
     long_description = LONG_DESCRIPTION,
     long_description_content_type = 'text/markdown',
     author = 'icoding2016',
@@ -18,9 +18,9 @@ setup(
 
     python_requires = '>=3.6',
     install_requires = [
-        'requests>=2.19.0',
-        'kafka-python>=2.0.0',
-        'psycopg2>=2.8.0',
+        'requests',
+        'kafka-python',
+        'psycopg2', 
     ],
 
     package_dir = {'': 'webmon'},
@@ -30,5 +30,3 @@ setup(
         '': ['config.json'],
     },
 )
-
-
