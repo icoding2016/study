@@ -33,11 +33,21 @@ network, produces metrics about this and passes these events through an Aiven Ka
   The config file will be generated with default values at the first run if it is not in the current folder.
 
 
+### Install
+
+  pip install webmon-demo
+
+Note:
+  psycopg2 needs 'python<x.x>-dev', 'libpq-dev' as pre-install condition.. 
+  e.g. sudo apt install python3.9-dev libpq-dev
+
+
 ### Run & test the code 
 
 - Run the code:
 
   python main.py
+
 - unit test
 
   python -m unittest discover .
