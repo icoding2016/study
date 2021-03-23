@@ -48,9 +48,6 @@ Note:
 
   python main.py
 
-- unit test
-
-  python -m unittest discover .
 
 Note:
 There is only a small piece of unit test code in this demo. Far from a good coverage.

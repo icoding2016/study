@@ -11,7 +11,7 @@ from webmon.monitor import WebMonitor
 
 class UTest(unittest.TestCase):
 
-    @mock.patch('checker.requests.get')
+    @mock.patch('webmon.checker.requests.get')
     def test_checker(self, mock1):
         url =  'http://kafka.apache.org/'
         pattern = r'<title>Apache\s*Kafka</title>'
@@ -35,9 +35,9 @@ class UTest(unittest.TestCase):
         self.assertTrue(result['errcode'] == '200')
         self.assertTrue(result['rsptime'] == '0:00:00.012345')
 
-    @mock.patch('db.psycopg2.connect')
-    @mock.patch('monitor.KafkaConsumer')
-    @mock.patch('monitor.KafkaProducer')
+    @mock.patch('webmon.db.psycopg2.connect')
+    @mock.patch('webmon.monitor.KafkaConsumer')
+    @mock.patch('webmon.monitor.KafkaProducer')
     def test_monitor(self, mock_pf, mock_cf, mock_df):
         url = 'http://kafka.apache.org/'
         mock_producer = mock.MagicMock()
@@ -58,7 +58,7 @@ class UTest(unittest.TestCase):
         time.sleep(61)
         #mock_conn.execute.assert_called()
         mock_producer.send.assert_called()
-        mock_consumer.__iter__.assert_called()
+        mock_consumer.poll.assert_called()
 
         # more tests ...
 
