@@ -7,10 +7,10 @@ import logging
 import pickle
 import threading
 import time
-from checker import WebChecker
-from config import WebMonConfig
-from db import WebMonDB
 from kafka import KafkaProducer, KafkaConsumer
+from webmon.checker import WebChecker
+from webmon.config import WebMonConfig
+from webmon.db import WebMonDB
 
 
 
