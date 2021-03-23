@@ -2,7 +2,7 @@
 
 import logging
 import psycopg2 
-from config import WebMonConfig
+from webmon.config import WebMonConfig
 
 
 class WebMonDB(object):

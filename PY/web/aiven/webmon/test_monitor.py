@@ -1,11 +1,11 @@
 import datetime
 import time
 import unittest
-from checker import WebChecker
-from db import WebMonDB
 from kafka import KafkaProducer, KafkaConsumer
-from monitor import WebMonitor
 from unittest import mock
+from webmon.checker import WebChecker
+from webmon.db import WebMonDB
+from webmon.monitor import WebMonitor
 
 
 

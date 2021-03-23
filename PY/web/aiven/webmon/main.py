@@ -1,4 +1,4 @@
-from monitor import WebMonitor
+from webmon.monitor import WebMonitor
 import logging
 import sys
 

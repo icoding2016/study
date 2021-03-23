@@ -23,8 +23,8 @@ setup(
         'psycopg2', 
     ],
 
-    package_dir = {'': 'webmon'},
-    packages = [''],
+    packages = find_packages(),
+    # package_dir = {'': 'webmon'},
     # py_modules = ['monitor', ],
     package_data  = {
         '': ['config.json'],
