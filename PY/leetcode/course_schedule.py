@@ -1,5 +1,7 @@
 # Course Schedule
 # Medium
+# https://leetcode.com/problems/course-schedule/submissions/
+#  
 # There are a total of num prerequisites you have to take, labeled from 0 to numCourses-1.
 # Some prerequisites may have prerequisites, for example to take course 0 you have to first take course 1, which is expressed as a pair: [0,1]
 # Given the total number of prerequisites and a list of prerequisite pairs, is it possible for you to finish all prerequisites?
@@ -29,11 +31,12 @@
 
 from collections import defaultdict
 from call_counter import call_counter, show_call_counter
+from typing import List
 
 
 # T(n^2)  -> each round at lease arrange a course (otherwise return False), so the loop decreases. 
 #            n + (n-1) + .. + 1 = n*(n+1)/2
-def courses_bf(prerequisites:list[list]) -> bool:
+def courses_bf(prerequisites:List[List]) -> bool:
     if not prerequisites:
         return True
     cd = defaultdict(list)
@@ -68,7 +71,7 @@ def courses_bf(prerequisites:list[list]) -> bool:
 
 
 # T(n^2) 
-def courses_noloop(prerequisites:list[list]):
+def courses_noloop(prerequisites:List[List]):
     cd = defaultdict(list)
     for c, d in prerequisites:
         cd[c].append(d)
@@ -97,7 +100,7 @@ def detect_loop(cd:defaultdict, c:int, path:list=None) -> bool:
 
 # T(N*(N+E)) ?  -> 1st loop O(N), then for each node in the 1st loop, do dfs O(V+E) -> O(N+E).
 #                  so total:  O(N*(N+E)) 
-def courses_noloop2(prerequisites:list[list]):
+def courses_noloop2(prerequisites:List[List]):
     cd = defaultdict(list)
     for c, d in prerequisites:
         cd[c].append(d)
@@ -148,6 +151,86 @@ def test():
     test_func(courses_noloop2)
 
 
-
-
 test()
+
+#####################################
+
+from collections import defaultdict
+
+class Solution:
+    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
+        if numCourses <= 1:
+            return True
+        self.dep = defaultdict(list)
+        for li in prerequisites:
+            self.dep[li[0]].append(li[1])
+            
+        return self.canFinish1(numCourses, prerequisites)
+        #return self.canFinish2(numCourses, prerequisites)
+
+    # Time limit
+    def canFinish1(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
+        for i in range(numCourses):
+            if not self.checkLoop1(i, numCourses, self.dep):
+                return False
+        return True
+        
+    def checkLoop1(self, cur:int, numCourses:int, dep:dict, checked:list=None, path:list=None)->bool:
+        """Return False if found loop (--failed the check)"""
+        if None == path:
+            path = []
+        if None == checked:
+            checked = [False]*numCourses
+        if cur >= numCourses:
+            assert("invalid cur %i" % cur)
+            return False
+        if checked[cur]:
+            return True
+        noloop = True
+        path.append(cur)
+        for d in dep[cur]:
+            if d in path:
+                return False
+            if not checked[d]:
+                noloop = self.checkLoop1(d, numCourses, dep, checked, path)
+        checked[cur]=True
+        path.pop()
+        return noloop
+
+    # accepted answer 
+    # T(V+E)
+    def canFinish2(self, numCourses: int, prerequisites: List[List[int]]) -> bool:
+        self.checkedrec = [False]*numCourses
+        for i in range(numCourses):
+            if self.checkedrec[i]:
+                continue
+            if not self.checkLoop2(i, numCourses, self.dep):
+                return False
+        return True
+
+    def checkLoop2(self, cur:int, numCourses:int, dep:dict, checked:list=None, path:list=None)->bool:
+        """Return False if found loop (--failed the check)"""
+        if None == path:
+            path = []
+        if None == checked:
+            checked = [False]*numCourses
+        if cur >= numCourses:
+            assert("invalid cur %i" % cur)
+
+        if checked[cur]:
+            # print("Already checked {}, skip".format(cur))
+            return True
+        noloop = True
+        path.append(cur)
+        for d in dep[cur]:
+            if d in path:
+                # print("found loop at {}->{}, path {}".format(cur,d, path))
+                return False
+            if not checked[d]:
+                noloop = self.checkLoop2(d, numCourses, dep, checked, path)
+        checked[cur]=True
+        if noloop:
+            self.checkedrec[cur]=True
+        path.pop()
+        # print("Checked {} pass, checked:{}".format(cur,checked))
+        return noloop

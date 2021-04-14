@@ -45,22 +45,27 @@ def nonDivisibleSubset(k, s):
     # Write your code here
     return process(k,s)
 
-def process(k,s,mx=0, cur=None):
+def process(k,s,mx=0, cur=None, memo=None):
     if None == cur:    
         cur = []
-    if k == 1:
+    if None == memo:
+        memo = {}
+    if k <= 1:
         return 0
     if not s:
-        if (len(cur)==1 and cur[0]%k!=0) or \
-           len(cur)>1:            
+        if (len(cur)==1 and cur[0]%k!=0) or len(cur)>1:            
             if len(cur)>mx:
                 mx=len(cur)
         return mx
     
+    cur.sort()
+    if tuple(cur) in memo:
+        return memo[tuple(cur)]
     n = s[0]
     if not cur or not any([(c+n)%k==0 for c in cur]):
         mx = process(k,s[1:], mx, cur+[n])
     mx = process(k,s[1:], mx, cur)
+    memo[tuple(cur)]=mx
     return mx            
 
 def process0(k,s,cur=None, output=None)->list:
@@ -89,7 +94,8 @@ def test_fixture():
         ((7, [278,576,496,727,410,124,338,149,209,702,282,718,771,575,436]),11),
         ((3, [3]), 0),
         ((3, [4]), 1),
-        ((5, [x for x in range(1,31)]), 13)
+        ((5, [x for x in range(1,31)]), 13),
+        #((3, [x for x in range(1,101)]), 35),
     ]
 
     for i in range(len(testdata)):
@@ -99,10 +105,10 @@ def test_fixture():
         print("{}".format('pass' if ret==exp else 'fail'))
 
 
-
+import timeit
 def test():
     #s = Solution()
     test_fixture()
 
-
-test()    
+test()
+# timeit.timeit('test()', number=1)    
