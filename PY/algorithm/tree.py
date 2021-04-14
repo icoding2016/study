@@ -169,7 +169,7 @@ class BTree(object):
         return l_hight if l_hight > r_hight else r_hight
 
     @staticmethod
-    def get_tree_level_data(root:'BTree', level:int = 0, data:dict[int:list] = {}) -> list[T]:
+    def get_tree_level_data(root:'BTree', level:int = 0, data:dict = {}) -> list:
         if not root:
             return data
 
@@ -254,6 +254,89 @@ class BTree(object):
             steps -= 1
         return self
 
+    def kth_min_node(self, k:int)->'BTree':
+        return self._kth_min_node(k)
+
+    def _kth_min_node(self, k:int, count:dict=None)->'BTree':
+        if k<1:
+            return None
+        if None == count:
+            count = {0:0}
+ 
+        if self.left:
+            print(count[0], self.value, "go left")
+            n = self.left._kth_min_node(k, count)
+            if n:
+                return n
+        else:
+            count[0] += 1
+        if count[0] >= k:
+            return self
+        if self.right:
+            print(count[0], self.value, "go right")
+            n = self.right._kth_min_node(k, count)
+            if n:
+                return n
+        else:
+            print(count[0], self.value, "go up")
+            return None
+
+
+    # To find the kth largest node
+    def kth_max_node(self, k:int)->'BTree':
+        return self._kth_max_node(k)
+
+    # reach the most 'right' -- the max node, mark  k-1
+    # repeat k times to reach the most right.
+    def _kth_max_node(self, k:int, result:'BTree'=None)->'BTree':
+        if k < 1:
+            return None
+        if k==1:
+            return self if result else None
+        
+        if not self.right:
+            if k == 1:
+                result = self
+                return self     # found kth max
+            # fall back
+            if self.left:
+                result = self.left._kth_max_node(k-1, result)
+            else:
+                return result     # k-1 required
+
+        else:
+            return self.right._kth_max_node(k, result)
+
+
+        # if not self.left and not self.right:
+        #     if k == 1:
+        #         return self
+        #     return None     # k-1
+        # if self.right:
+        #     n = self.right._kth_max_node(k)
+        #     if n:
+        #         return n
+        #     else:
+        #         k -= 1
+        # else:
+        #     if k == 1:
+        #         return self
+
+        # if self.left:
+        #     return self.left._kth_max_node(k-1)
+
+        # return None
+
+
+        # if not self.right:
+        #     if k==1:
+        #         return self
+        #     if self.left:
+        #         return self.left._kth_max_node(k-1)
+        # else:
+        #     return self.right._kth_max_node(k)
+
+
 def test_walk_trail():
     data1 = [1,3,2,4,7,5,6,8]
     data2 = [11,13,12,13,17,15,16,18]
@@ -294,5 +377,17 @@ def test():
     for i in range(10):
         print(bt.get_random_node().value, end=',')
     print('')
+
+    print('get kth min')
+    for k in range(1, len(values)+1):
+        n = bt.kth_min_node(k)
+        v = n.value if n else None
+        print("===={}th min: {}".format(k, v))
+    print('get kth max')
+    for k in range(1, len(values)+1):
+        n = bt.kth_max_node(k)
+        v = n.value if n else None
+        #print("{}th max: {}".format(k, v))
+
 
 test()
