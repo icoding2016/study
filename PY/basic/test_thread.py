@@ -20,7 +20,7 @@ class MyThread(threading.Thread):
 
     def CheckEvent(self):
         if self.event.is_set():
-            self.terminate = True;
+            self.terminate = True
             print("MyThread to be terminated.")
 
 

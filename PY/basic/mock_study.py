@@ -4,7 +4,23 @@
 #   This means that mock.patch() doesn't require that you import the object before patching, 
 #   while mock.patch.object() does require that you import before patching.
 #   The latter is then easier to use if you already have a reference to the object.
-
+# 
+# Scope of mock.Pack
+# e.g.
+#   a.py
+#     -> Defines SomeClass
+#   b.py
+#     -> from a import SomeClass
+#     -> some_function instantiates SomeClass
+# Now we want to test some_function but we want to mock out SomeClass using patch(). 
+# The problem is that when we import module b, which we will have to do then it imports SomeClass from module a. 
+# If we use patch() to mock out a.SomeClass then it will have no effect on our test; module b already has a reference to the real SomeClass and it looks like our patching had no effect.
+# The key is to patch out SomeClass where it is used (or where it is looked up). <<====
+# In this case some_function will actually look up SomeClass in module b, where we have imported it. 
+# The patching should look like:
+#   @patch('b.SomeClass')
+# 
+# #
 
 import os
 import sys
