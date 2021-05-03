@@ -129,6 +129,44 @@ class MaxHeapQueue(object):
                 count = 0
         print('')
 
+    def find(self, value: T) -> int:
+        """Search for a value in the heap, return index"""
+        for i,v in enumerate(self._queue):
+            if v == value:
+                return i
+        return None
+
+    def update(self, index: int, newvalue: T) -> bool:
+        if index >= len(self._queue) or index < 0:
+            return False
+        self._queue[index] = newvalue
+        cur = index
+        pi = (cur-1)//2
+        if self._queue[pi] < self._queue[cur]:    # bubble up if needed
+            while pi >= 0:
+                if self._queue[pi] >= self._queue[cur]:
+                    return True
+                self._queue[pi], self._queue[cur] = self._queue[cur], self._queue[pi]
+                cur = pi
+                pi = (cur-1)//2
+        elif self._queue[pi] == self._queue[cur]:
+            return True
+        else:      # sink if needed
+            li = 2*cur + 1
+            ri = 2*cur + 2
+            i = None
+            while li < len(self._queue):
+                if ri >= len(self._queue):
+                    i = li
+                else:
+                    i = li if self._queue[li] > self._queue[ri] else ri
+                if self._queue[cur] >= self._queue[i]:
+                    return True
+                self._queue[cur], self._queue[i] = self._queue[i], self._queue[cur]
+                cur = i
+                li = 2*cur + 1
+                ri = 2*cur + 2
+        return True
 
 class MinHeapQueue(object):
     def __init__(self, data:list[T]=None) -> None:
@@ -269,17 +307,22 @@ def test():
     print(maxhq1)
     maxhq1.show()
     print('- push 8')
-    maxhq.push(8)
-    print(maxhq)
+    maxhq1.push(8)
+    print(maxhq1)
+    maxhq1.show()
+    print('update 8(index=4)->11')
+    maxhq1.update(4, 11)
+    print(maxhq1)
+    maxhq1.show()
     print('- push 15')
-    maxhq.push(15)
-    print(maxhq)
+    maxhq1.push(15)
+    print(maxhq1)
+    print('pop: {}'.format(maxhq1.pop()))
+    print(maxhq1)
     print('pop: {}'.format(maxhq.pop()))
-    print(maxhq)
-    print('pop: {}'.format(maxhq.pop()))
-    print(maxhq)
-    print('pop: {}'.format(maxhq.pop()))
-    print(maxhq)
+    print(maxhq1)
+    print('pop: {}'.format(maxhq1.pop()))
+    print(maxhq1)
 
 
     # MinHeapQueue
