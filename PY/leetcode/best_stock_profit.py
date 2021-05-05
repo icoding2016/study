@@ -48,7 +48,6 @@ class Solution:
     def maxProfit_dp(self, prices: List[int]) -> int:
         N = len(prices)
         i = 0
-        j = N-1
         minmax=[[None, None] for i in range(N)]
         minmax[0] = [prices[0], None]
         minmax[N-1] = [None, prices[N-1]]
