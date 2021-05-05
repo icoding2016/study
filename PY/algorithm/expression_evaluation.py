@@ -18,9 +18,9 @@
 #   Operand stack: to keep values (numbers)  and
 #   Operator stack: to keep operators (+, -, *, . and ^). 
 # In the following, “process” means, 
-#   (i) pop operand stack once (value1) 
+#   (i) pop operand stack once (value2) 
 #   (ii) pop operator stack once (operator) 
-#   (iii) pop operand stack again (value2) 
+#   (iii) pop operand stack again (value1) 
 #   (iv) compute value1 operator  value2
 #   (v) push the value obtained in operand stack.          
 # Algorithm:
@@ -36,9 +36,6 @@
 # When there are no more input characters, keep processing until the operator stack becomes empty.
 #   The values left in the operand stack is the final result of the expression.
 # 
-# Note
-# 
-#    
 # e.g. 
 #   10*3-((6+5)-2*4)^2+20/4 = 
 #
@@ -87,7 +84,6 @@ class ExpressionEvaluator(object):
         
         for c in self.parse(expression):
             if c not in self.OPERATOR:
-                # validate c as a number
                 self.operands.append(c)
             elif not self.operators:
                 self.operators.append(c)

@@ -16,83 +16,144 @@ import random
 
 BUF_SIZE = 10
 buf_counter = 0                 # current filled count in buf
-sem_buf = threading.Semaphore(1)
+sem_access = threading.Semaphore(1)
+
+sem_buf_free = threading.Semaphore(BUF_SIZE)
+sem_buf_used = threading.Semaphore(0)
 
 
 def produce():
+    # produce_onelock()
+    produce_3locks()
+
+def produce_onelock():
     global BUF_SIZE
     global buf_counter
-    global sem_buf
+    global sem_access
 
-    sem_buf.acquire(blocking=True)
-    if buf_counter < BUF_SIZE:
-        buf_counter += 1
-        print("produce +1, now {}".format(buf_counter))
-    else:
-        print("product: too many.. skip")
-    sem_buf.release()
-    
+    # sem_access.acquire(blocking=True)        # use 'with statement'
+    with sem_access:
+        if buf_counter < BUF_SIZE:
+            buf_counter += 1
+            print("produce +1, now {}".format(buf_counter))
+        else:
+            print("product: too many.. skip")
+    # sem_access.release()
+
+def produce_3locks():
+    global sem_access
+    global sem_buf_free
+    global sem_buf_used
+
+    with sem_access:
+        if sem_buf_free.acquire(blocking=False):
+            sem_buf_used.release()
+            print("produce +1, now {}".format(sem_buf_used._value))
+        else:
+            print('produce skip, (queue full).')
+
 def consume():
-    global buf_counter
-    global sem_buf
+    # consume_onelock()
+    consume_3locks()
 
-    sem_buf.acquire(blocking=True)
-    if buf_counter > 0:
-        buf_counter -= 1
-        print("consume +1, now {}".format(buf_counter))
-    else:
-        print("consume: no product.. give up")
-    sem_buf.release()
+def consume_onelock():
+    global buf_counter
+    global sem_access
+
+    # sem_access.acquire(blocking=True)
+    with sem_access:
+        if buf_counter > 0:
+            buf_counter -= 1
+            print("consume -1, now {}".format(buf_counter))
+        else:
+            print("consume: no product.. give up")
+    # sem_access.release()
+
+def consume_3locks():
+    global sem_access
+    global sem_buf_free
+    global sem_buf_used
+
+    with sem_access:
+        if sem_buf_used.acquire(blocking=False):
+            sem_buf_free.release()
+            print("consume -1, now {}".format(sem_buf_used._value))
+        else:
+            print('consume skip, (empty queue).')
 
 
 class Producer(threading.Thread):
-    def __init__(self, efficiency=5):
+    def __init__(self, name=None, efficiency=5):
         threading.Thread.__init__(self)
-        self.name = 'Producer'
-        self.cr_section = threading.Lock()
+        self.name = name if name else 'Producer'
+        self.cr_section = threading.Lock()     # the Lock has no use (it's per object)
+        self._active = True
         if efficiency >= 9:
             self.efficiency = 9
         elif efficiency < 1:
             self.efficiency = 1
         else:
             self.efficiency = efficiency
-        print("Producer is available")
+        print(f"Producer {self.name} is available")
 
     def run(self):
         global produce
-        while(True):
+        while(self._active):
             self.cr_section.acquire()
             produce()
             self.cr_section.release()
             time.sleep(random.random()*(10-self.efficiency))
-    
+        print(f'Producer {self.name} stopped.')
+
+    def stop(self):
+        self._active = False
+
+
 class Consumer(threading.Thread):
-    def __init__(self, efficiency=5):
+    def __init__(self, name=None, efficiency=5):
         threading.Thread.__init__(self)
-        self.name = 'Consumer'
+        self.name = name if name else 'Consumer'
         self.cr_section = threading.Lock()
+        self._active = True
         if efficiency >= 9:
             self.efficiency = 9
         elif efficiency < 1:
             self.efficiency = 1
         else:
             self.efficiency = efficiency
-        print("Consumer is available")
+        print(f"Consumer {self.name} is available")
 
     def run(self):
         global consume
-        while(True):
+        while(self._active):
             self.cr_section.acquire()
             consume()
             self.cr_section.release()
             time.sleep(random.random()*(10-self.efficiency))
+        print(f'Consumer {self.name} stopped.')
+
+    def stop(self):
+        self._active = False
 
 
 if __name__ == "__main__":
-    P = Producer(efficiency=5)
-    C = Consumer(efficiency=5)
-    P.start()
-    C.start()
+    _ = input('Press Enter to start the producer-consumer. (Press Enter again to stop).')
 
+    P1 = Producer('P1', efficiency=5)
+    P2 = Producer('P2', efficiency=3)
+    C1 = Consumer('C1', efficiency=3)
+    C2 = Consumer('C2', efficiency=4)
+    C3 = Consumer('C3', efficiency=2)
+    P1.start()
+    P2.start()
+    C1.start()
+    C2.start()
+    C3.start()
 
+    _ = input('')
+    P1.stop()
+    P2.stop()
+    C1.stop()
+    C2.stop()
+    C3.stop()
 
