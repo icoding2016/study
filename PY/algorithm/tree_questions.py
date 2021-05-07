@@ -82,6 +82,9 @@
 # (traveling only from parent nodes to child nodes).
 # Hints:
 
+# Find the min and max depth of a tree
+# Given a tree, get the min and max depth.
+# 
 
 
 
@@ -345,6 +348,31 @@ def path_with_sum(root:BTree, sum:int, cur_sum:int=0, cur_count:int=0, cur_path:
 
     return cur_count, paths
 
+def tree_min_max_depth(tree:BTree) -> (int, int):
+    """Given a binary tree, return min and max depth.
+
+       dmin(node) = min(dmin(left), dmin(right))+1 if left and right 
+                    dmin(left)+1 if left and not right
+                    dmin(right)+1 if right and not left
+                    1 if not left and not right
+       dmax(node) = max(dmax(left) if left else 0, dmax(right) if right else 0) + 1
+    """
+    dmin_l, dmax_l = tree_min_max_depth(tree.left) if tree.left else (0, 0)
+    dmin_r, dmax_r = tree_min_max_depth(tree.right) if tree.right else (0, 0)
+    dmax = max(dmax_l, dmax_r)+1
+    if not tree.left and not tree.right:
+        dmin = 1
+    elif tree.left and not tree.right:
+        dmin = dmin_l + 1
+    elif tree.right and not tree.left:
+        dmin = dmin_r + 1
+    else:
+        dmin = min(dmin_l, dmin_r) + 1
+    return dmin, dmax
+    
+
+
+
 def test():
     data = [1,2,3,4,5,6,7,8,9,10]
     node = mini_tree(data)
@@ -418,5 +446,16 @@ def test():
     print(path_with_sum(t, 20))
     t2 = BTree.generate([2,1,3,1,2,1,3,1,1,3,1,2,1,3,1,1,1,1,2,1])
     print(path_with_sum(t2, 5))
+
+    # tree_min_max_depth
+    print('tree_min_max_depth')
+    t = BTree.generate([10,5,15,3,8,12,19,2,4,6,9,0,1,7])
+    print(t)
+    print(tree_min_max_depth(t))
+    t = BTree.generate([7,4,10,2,5,8,9])
+    print(t)
+    print(tree_min_max_depth(t))
+
+
 
 test()

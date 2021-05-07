@@ -90,6 +90,26 @@ class BTree(object):
         print(self.left)        
         print(self.right)
 
+    def __str__(self) -> str:
+        s = ''
+        q = [(0, self)]
+        lvl = 0
+        while q:
+            l, n = q[0]
+            if lvl < l:
+                lvl = l
+                s += '\n'
+            s += f'{n.value}, ' if n else f'_, '
+            # if n.left != None:
+            #     q.append((l+1, n.left))
+            # if n.right != None:
+            #     q.append((l+1, n.right))
+            if n:
+                q.append((l+1, n.left))
+                q.append((l+1, n.right))
+            q.remove(q[0])
+        return s
+
     def walk(self, order='IN_ORDER'):
         if not order in self.ORDER:
             print("Invalid order, need to be in {}".format(self.ORDER))
@@ -193,6 +213,16 @@ class BTree(object):
 
     @staticmethod
     def breath_first_walk(root):
+        q = [root]
+        while q:
+            yield q[0].value
+            if q[0].left:
+                q.append(q[0].left)
+            if q.right:
+                q.append(q[0].right)
+            q.remove(q[0])
+
+    def breath_first_walk1(root):
         '''Count & Remember the level of current node while walking through the tree
            Save the 'value' of current level to the list[level-id]
            Need to add a 'level' argument for depth_first_walk
