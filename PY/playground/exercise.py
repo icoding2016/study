@@ -6,7 +6,7 @@ class LoopError(Exception):
     pass
 
 
-def dfs(cur:int, graph:dict, path:list=None, visited:dict=None) -> None:
+def graph_dfs(cur:int, graph:dict, path:list=None, visited:dict=None) -> None:
     if None == path:
         path = []
     if None == visited:
@@ -15,13 +15,13 @@ def dfs(cur:int, graph:dict, path:list=None, visited:dict=None) -> None:
         raise LoopError
     for neighbor in graph[cur]:
         if neighbor not in path and neighbor not in visited:
-            for x in dfs(neighbor, graph, path + [cur], visited):
+            for x in graph_dfs(neighbor, graph, path + [cur], visited):
                 yield x
     visited[cur] = True
     yield cur
 
 
-def test_dfs():
+def test_graph_dfs():
     graph = {
         1:[],
         2:[1],
@@ -31,13 +31,14 @@ def test_dfs():
         6:[3,4,2,1],
     }
     start = 4
-    print(f'start {start}: {[v for v in dfs(start, graph)]}')
+    print(f'start {start}: {[v for v in graph_dfs(start, graph)]}')
     start = 5
-    print(f'start {start}: {[v for v in dfs(start, graph)]}')
+    print(f'start {start}: {[v for v in graph_dfs(start, graph)]}')
     start = 6
-    print(f'start {start}: {[v for v in dfs(start, graph)]}')
+    print(f'start {start}: {[v for v in graph_dfs(start, graph)]}')
     start = 1
-    print(f'start {start}: {[v for v in dfs(start, graph)]}')
+    print(f'start {start}: {[v for v in graph_dfs(start, graph)]}')
+
 
 # O(N)   N=num/2
 def perfect_num(num: int) -> bool:
@@ -96,6 +97,7 @@ def test_perfect_number():
     ]
     test_fixture(perfect_num3, data)
 
+
 @timing
 def test_timing():
     s = 0
@@ -149,20 +151,300 @@ class BTree():
             del q[0]
         return s
 
+    def inorder(self) -> None:
+        if self.left:
+            for x in self.left.inorder():
+                yield x
+        yield self.value
+        if self.right:
+            for x in self.right.inorder():
+                yield x
+
+    def dfs(self):
+        if self.left:
+            for x in self.left.dfs():
+                yield x
+        if self.right:
+            for x in self.right.dfs():
+                yield x
+        yield self.value
+
+    def bfs(self):
+        buf = [self]
+        while buf:
+            cur = buf[0]
+            if cur.left:
+                buf.append(cur.left)
+            if cur.right:
+                buf.append(cur.right)
+            yield cur.value
+            del buf[0]
+
 
 
 def test_btree():
     data = [7,4,2,9,1,5,8,3,6,10,0]
     tree = BTree.generate(data)
     print(tree)
+    
+    print('-- inorder --')
+    print([x for x in tree.inorder()])
+
+    print('-- dfs --')
+    print([x for x in tree.dfs()])
+
+    print('-- bfs --')
+    print([x for x in tree.bfs()])
+
+
+class LinkedNode(object):
+    def __init__(self, value) -> None:
+        self.value = value
+        self.next = None
+
+    @classmethod
+    def generate_raw(cls, data:list) -> 'LinkedNode':
+        """Generate the linked list from the data per it's original order"""
+        cur = head = None
+        for d in data:
+            node = LinkedNode(d)
+            if not head:
+                head = node
+                cur = node
+            else:
+                cur.next = node
+                cur = node
+        return head
+
+    @classmethod
+    def generate_ascending(cls, data:list) -> 'LinkedNode':
+        """Generate the linked list from the data in ascending order.
+        Returns:    head
+        """
+        head = None
+        for d in data:
+            if not head:
+                head = LinkedNode(d)
+            else:
+                head = head.insert(d)
+        return head
+
+    def tail(self) -> 'LinkedNode':
+        cur = self
+        while cur.next:
+            cur = cur.next
+        return cur
+
+    def insert(self, value) -> None:
+        """Insert a new value to the list, assume the list is sorted (ascending order)"""
+        cur = head = self
+        pre = None
+        node = LinkedNode(value)
+        while cur:
+            if value > cur.value:
+                pre = cur
+                cur = cur.next
+                if not cur:
+                    pre.next = node
+                    break
+            elif value == cur.value:
+                node.next = cur.next
+                cur.next = node
+                break
+            else:
+                if not pre:
+                    node.next = head
+                    head = node
+                else:
+                    pre.next = node
+                    node.next = cur
+                break
+        return head
+
+    @classmethod
+    def sort(cls, head:'LinkedNode') -> 'LinkedNode':
+        if not head:
+            return head
+        pre = head
+        cur = head.next        
+        while cur:
+            if cur.value >= pre.value:
+                pre = cur
+                cur = cur.next
+                continue
+            else:
+                pre.next = None
+                head = head.insert(cur.value)
+                pre = head.tail()
+                cur = cur.next
+                pre.next = cur
+        return head
+
+    def reverse(self) -> 'LinkedNode':
+        pre = head = self
+        cur = self.next
+        next = None
+        while cur:
+            next = cur.next
+            cur.next = pre
+            if pre == self:
+                pre.next = None  # tail
+            head = cur
+            pre = cur
+            cur = next
+        return head
+
+    def __str__(self):
+        s = f'{self.__class__}: '
+        cur = self
+        while cur:
+            s += f'{cur.value}'
+            cur = cur.next
+            if cur:
+                s += '->'
+        return s
+
+
+def find_intersection_of_linked_nodes(l1:LinkedNode, l2:LinkedNode) -> LinkedNode:
+    """Find intersection node in 2 linked lists."""
+    rec1 = dict()
+    rec2 = dict()
+    p1 = l1
+    p2 = l2
+    while p1 or p2:
+        if p1:
+            if p1 in rec2:
+                return p1
+            else:
+                rec1[p1] = True
+                p1 = p1.next
+        if p2:
+            if p2 in rec1:
+                return p2
+            else:
+                rec2[p2] = True
+                p2 = p2.next
+    return None
+
+def test_find_intersection_of_linked_nodes():
+    l1 = LinkedNode.generate_raw([5,7,2,9,4,1,6,8,3])
+    l2 = LinkedNode.generate_raw([15,13,12,19,11,14,17,16,18])
+    l3 = LinkedNode.generate_raw([24,26,21,23,22,25])
+    l1.tail().next = l3
+    l2.tail().next = l3
+    print('test find_intersection_of_linked_nodes:')
+    print(f'l1: {l1}')
+    print(f'l2: {l2}')
+    node = find_intersection_of_linked_nodes(l1,l2)
+    print(f'intersection: {node} ({node.value})')
+
+def test_linked_list():
+    data = [7,4,2,3,9,8,5,1,6]
+    print('generate_raw')
+    ll = LinkedNode.generate_raw(data)
+    print(ll)
+    print('sort')
+    lls = LinkedNode.sort(ll)
+    print(lls)
+    print('reverse')
+    llr = LinkedNode.reverse(lls)
+    print(llr)
+    print('generate_ascending')
+    ll1 = LinkedNode.generate_ascending(data)
+    print(ll1)
+
+
+def reserse_substr(s1:str, s2:str) -> str:
+    """Find if s2 is a substring in s1, if yes, reverse it in s1
+    Return: processed s1, or s1 if s2 not found.
+    """
+    if len(s1) < len(s2):
+        return s1
+    elif len(s1) == len(s2):
+        if s1==s2[::-1]:
+            return s2
+        else:
+            return s1
+    newstr = ''
+    i = 0
+    while i < len(s1):
+        if i < len(s1)-len(s2) and s1[i:i+len(s2)] == s2:
+            newstr += s2[::-1]
+            i += len(s2)
+        else:
+            newstr += s1[i]
+            i += 1
+    return newstr
+
+
+def test_reverse_substr():
+    s1 = 'the original string containing substrings for string reversing test.'
+    s2 = 'ing'
+    s = reserse_substr(s1, s2)
+    print(s1)
+    print(s)
+
+
+def zigzag_str(s:str, Z:int) -> str:
+    """Zigzag traverse s, with Z rows."""
+    if Z <= 1:
+        return s
+    rows = [[] for i in range(Z)]
+    G = 2*Z-2
+    for i in range(len(s)):
+        j = i%G
+        if j < Z:
+            rows[j].append(s[i])
+        else:
+            rows[2*Z-j-2].append(s[i])
+    ret = ''
+    for row in rows:
+        ret += ''.join(row)
+    return ret
+
+def zigzag_str2(s:str, Z:int) -> str:
+    """Zigzag traverse s, with Z rows."""
+    if Z <= 1:
+        return s
+    rows = [[] for i in range(Z)]
+    r = 0
+    fwd = True
+    for i in range(len(s)):
+        rows[r].append(s[i])
+        if fwd:
+            if r == Z-1:
+                fwd = False
+        else:
+            if r == 0:
+                fwd = True
+        r += 1 if fwd else -1
+    ret = ''
+    for row in rows:
+        ret += ''.join(row)
+    return ret
+
+
+def test_zigzag_str():
+    s = 'abcdefghijklmn'
+    data = [
+        ((s, 1), 'abcdefghijklmn'),
+        ((s, 2), 'acegikmbdfhjln'),
+        ((s, 3), 'aeimbdfhjlncgk'),
+        ((s, 4), 'agmbfhlnceikdj'),
+    ]
+    test_fixture(zigzag_str, data)
+    test_fixture(zigzag_str2, data, hide_input=True)
 
 
 def test():
-    #test_dfs()
+    #test_graph_dfs()
     #test_perfect_number()
     #test_timing()
     test_btree()
-
+    test_linked_list()
+    test_find_intersection_of_linked_nodes()
+    test_reverse_substr()
+    test_zigzag_str()
     
 
 test()

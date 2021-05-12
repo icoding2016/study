@@ -1,7 +1,16 @@
 import timeit
 
 
-def test_fixture(f:callable, test_data:list[tuple], comp:callable = None):
+def test_fixture(f:callable, test_data:list[tuple], comp:callable = None, hide_input:bool = False, hide_output:bool = False):
+    """test fixture.
+    Args:
+        test_data, in form of:
+            [
+                ((arg1, arg2, ..), expectation),
+                ((arg1, arg2, ..), expectation),
+                ...
+            ]
+    """
     def _comp(r, e):
         return r == e     # default implementation
 
@@ -9,6 +18,7 @@ def test_fixture(f:callable, test_data:list[tuple], comp:callable = None):
         comp = _comp
 
     t = 0
+    print(f'test function: {f}')
     print(f"    RESULT {'INPUT':^20} {'RETURE':^20} {'EXPECTATION':^20}")
     for i, testcase in enumerate(test_data):
         in_data = testcase[0]
@@ -17,7 +27,10 @@ def test_fixture(f:callable, test_data:list[tuple], comp:callable = None):
         ret = f(*in_data)
         t += timeit.default_timer() - starttime
         result = 'PASS' if comp(ret,expect) else 'FAIL'
-        print(f"{i:<3}: {result}  {str(in_data):^20} {ret:^20} {expect:^20}")
+        # print(f"{i:<3}: {result}  {str(in_data):^20} {ret:^20} {expect:^20}")
+        in_arg = f"{str(in_data):^20} " if not hide_input else f"{'  ':^20}"
+        ret_exp = f"{ret:^20} {expect:^20}" if not hide_output else ""
+        print(f"{i:<3}: {result} {in_arg}{ret_exp}")
     print(f'Run time: {t}')
 
 
