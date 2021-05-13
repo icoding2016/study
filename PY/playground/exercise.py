@@ -295,7 +295,7 @@ class LinkedNode(object):
         return head
 
     def __str__(self):
-        s = f'{self.__class__}: '
+        s = f"{str(self.__class__).split('.')[-1][:-2]}: "
         cur = self
         while cur:
             s += f'{cur.value}'
@@ -303,7 +303,6 @@ class LinkedNode(object):
             if cur:
                 s += '->'
         return s
-
 
 def find_intersection_of_linked_nodes(l1:LinkedNode, l2:LinkedNode) -> LinkedNode:
     """Find intersection node in 2 linked lists."""
@@ -337,6 +336,55 @@ def test_find_intersection_of_linked_nodes():
     print(f'l2: {l2}')
     node = find_intersection_of_linked_nodes(l1,l2)
     print(f'intersection: {node} ({node.value})')
+
+def merge_sorted_linked_list(l1:LinkedNode, l2:LinkedNode) -> LinkedNode:
+    cur = head = None
+    while l1 or l2:
+        if l1 and not l2:
+            if cur:
+                cur.next = l1
+            else:
+                head = l1
+            break
+        elif l2 and not l1:
+            if cur:
+                cur.next = l2
+            else:
+                head = l2
+            break
+        lsmall = l1 if l1.value < l2.value else l2
+        if l1.value < l2.value:
+            l1 = l1.next
+        else:
+            l2 = l2.next
+        if cur:
+            cur.next = lsmall
+            cur = cur.next
+        else:
+            cur = head = lsmall
+    return head
+
+def test_merge_sorted_linked_list():
+    data = [
+        ((LinkedNode.generate_ascending([7,5,9,3,1]), LinkedNode.generate_ascending([6,4,8,2,10,0])),LinkedNode.generate_ascending([i for i in range(11)])),
+        ((LinkedNode.generate_ascending([6,7,10,8,9]), LinkedNode.generate_ascending([3,4,1,5,2,0])), LinkedNode.generate_ascending([i for i in range(11)])),
+        ((LinkedNode.generate_ascending([5,3,1]), LinkedNode.generate_ascending([6,2,5,4])), LinkedNode.generate_ascending([5,6,2,5,3,1,4])),
+        ((LinkedNode.generate_ascending([7,5,9,3,1]), None), LinkedNode.generate_ascending([7,5,9,3,1])),
+        ((None, LinkedNode.generate_ascending([7,5,9,3,1])), LinkedNode.generate_ascending([7,5,9,3,1])),
+        ((None, None), None)
+    ]
+    def eql_ln(l1, l2):
+        p1 = l1
+        p2 = l2
+        while p1 or p2:
+            if (p1 and not p2) or (p2 and not p1):
+                return False
+            if p1.value != p2.value:
+                return False
+            p1 = p1.next
+            p2 = p2.next
+        return True
+    test_fixture(merge_sorted_linked_list, data, comp=eql_ln, hide_input=True)
 
 def test_linked_list():
     data = [7,4,2,3,9,8,5,1,6]
@@ -443,8 +491,9 @@ def test():
     test_btree()
     test_linked_list()
     test_find_intersection_of_linked_nodes()
-    test_reverse_substr()
-    test_zigzag_str()
+    test_merge_sorted_linked_list()
+    # test_reverse_substr()
+    # test_zigzag_str()
     
 
 test()
