@@ -28,8 +28,11 @@ class Solution():
 
     @staticmethod
     def sqrt_binary(num, precision=4) -> float:
-        low = 0
-        high = num
+        low = high = num
+        if num >= 1:
+            low = 0
+        else:
+            high = 1
         mid = None
         accept_margin = pow(0.1, precision)
         while abs(high-low) > accept_margin:
@@ -50,6 +53,7 @@ def test():
         ((10,), sqrt(10)),
         ((1,), 1),
         ((0,), 0),
+        ((0.25,), 0.5),
     ]
 
     precision = 4
