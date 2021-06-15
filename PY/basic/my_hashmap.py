@@ -79,8 +79,8 @@ class MyHashMap(object):
             return False
         for k,v in self._buckets[index]:
             if k == key:
-                del self._buckets[index][key]
-                return True
+                self._buckets[index].remove((k, v))
+            return True
         return False
 
     def __len__(self) -> int:
@@ -98,9 +98,9 @@ class MyHashMap(object):
                 continue
             for i, (k, v) in enumerate(self._buckets[index]):
                 s += f'{k}:{v}'
-                if i < len(self._buckets[index]-1):
+                if i < len(self._buckets[index])-1:
                     s += ', '
-            if index < len(self._bucket_num) - 1:
+            if index < self._bucket_num-1:
                 s += ','
         s += '}'
         return s
@@ -128,6 +128,9 @@ def test():
         hashmap.add(k, v)
     print(len(hashmap), len(data))
     hashmap.debug()
+    print(hashmap)
+    hashmap.delete('Jenny')
+    print(hashmap)
 
 
 test()
