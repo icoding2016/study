@@ -1,5 +1,5 @@
 # to implement a hashmap
-# The hashmap support add(key, value), get(key), del() in O(1),
+# The hashmap support set(key, value), get(key), del() in O(1),
 # also support some other method like len(), str()
 # 
 #  
@@ -57,7 +57,7 @@ class MyHashMap(object):
         """" To hash the key into the index of buckets """
         return self.hash_method(key, self._bucket_num)
 
-    def add(self, key:Hashable, value:T) -> None:
+    def set(self, key:Hashable, value:T) -> None:
         index = self._hash(key)
         if not self._buckets[index]:
             self._buckets[index] = [(key, value)]
@@ -66,22 +66,65 @@ class MyHashMap(object):
 
     def get(self, key:Hashable) -> Optional[T]:
         index = self._hash(key)
-        if not self._buckets[index]:
-            return None
-        for k,v in self._buckets[index]:
-            if k == key:
-                return v
-        return None
+        if self._buckets[index]:
+            for k,v in self._buckets[index]:
+                if k == key:
+                    return v
+        raise KeyError(f"{key}")
 
     def delete(self, key:Hashable) -> bool:
         index = self._hash(key)
-        if not self._buckets[index]:
-            return False
-        for k,v in self._buckets[index]:
-            if k == key:
-                self._buckets[index].remove((k, v))
-            return True
+        if self._buckets[index]:
+            for k,v in self._buckets[index]:
+                if k == key:
+                    self._buckets[index].remove((k, v))
+                    return
+        raise KeyError(f"{key}")
+
+    def keys(self) -> list:
+        return [k for k in self]
+
+    def values(self) -> list:
+        return [self[k] for k in self]
+
+    def items(self) -> list:
+        return [(k, self[k]) for k in self]
+
+    def __contains__(self, key:Hashable) -> bool:
+        index = self._hash(key)
+        if self._buckets[index]:
+            for k, _ in self._buckets[index]:
+                if key == k:
+                    return True
         return False
+
+    def __getitem__(self, key:Hashable) -> T:
+        return self.get(key)
+
+    def __setitem__(self, key:Hashable, value:T) -> None:
+        self.set(key, value)
+
+    def __delitem__(self, key:Hashable) -> None:
+        self.delete(key)
+
+    def __iter__(self):
+        self.bi = self.ii = 0
+        return self
+
+    def __next__(self):
+        while self.bi < self._bucket_num:
+            if (self.bi >= self._bucket_num or 
+                (self.bi == self._bucket_num-1 and self._buckets[self.bi] == None) or
+                (self.bi == self._bucket_num-1 and self.ii >= len(self._buckets[self.bi]))):
+                raise StopIteration
+            if self._buckets[self.bi] and self.ii < len(self._buckets[self.bi]):
+                key = self._buckets[self.bi][self.ii][0]
+                self.ii += 1
+                return key
+            else: #(not self._buckets[self.bi] or (self._buckets[self.bi] and self.ii >= len(self._buckets[self.bi]))):
+                self.bi += 1
+                self.ii = 0
+                continue
 
     def __len__(self) -> int:
         count = 0
@@ -125,12 +168,34 @@ def test():
             1527:36, ('ET','Alien'):245}
     hashmap = MyHashMap()
     for k, v in data.items():
-        hashmap.add(k, v)
+        hashmap.set(k, v)
     print(len(hashmap), len(data))
     hashmap.debug()
     print(hashmap)
     hashmap.delete('Jenny')
     print(hashmap)
+
+    hashmap['newbee'] = 10
+    hashmap['Adam'] = 50
+    print(hashmap['Adam'])
+    print(hashmap['Emily'])
+    print(hashmap)
+
+    hashmap.debug()
+    for k in hashmap:
+        print(f"{k} age: {hashmap[k]}")
+    print(hashmap.keys())
+    print(hashmap.values())
+    print(hashmap.items())
+
+    del hashmap['newbee']
+    print(hashmap)
+    del hashmap['Adam']
+    try:
+        print(hashmap['Adam'])
+    except KeyError:
+        print(f"hashmap['Adam'] KeyError caught.")
+
 
 
 test()
