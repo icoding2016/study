@@ -75,7 +75,7 @@ class Tree(object):
 
     def dfs(self, type:'Tree.TRAVERSAL_TYPE'='Tree.TRAVERSAL_TYPE.PRE_ORDER') -> None:
         if type == Tree.TRAVERSAL_TYPE.IN_ORDER:
-            for value in self.dfs_inorder(tye):
+            for value in self.dfs_inorder(type):
                 yield value
         elif type == Tree.TRAVERSAL_TYPE.PRE_ORDER:
             for value in self.dfs_preorder():
