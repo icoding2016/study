@@ -42,7 +42,8 @@ from typing import List
 
 class Solution:
     def combinationSum(self, candidates: List[int], target: int) -> List[List[int]]:
-        return self.combSum1(candidates, target)
+        smaller_set = [c for c in candidates if c <= target]
+        return self.combSum1(smaller_set, target)
 
     def combSum1(self, candidates: List[int], target: int) -> List[List[int]]:
         if len(candidates) == 1 and candidates[0]>target:

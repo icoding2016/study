@@ -1,4 +1,7 @@
+from io import StringIO
+import sys
 import timeit
+from typing import Callable
 
 
 def test_fixture(f:callable, test_data:list[tuple], comp:callable = None, hide_input:bool = False, hide_output:bool = False):
@@ -41,3 +44,65 @@ def timing(f:callable):
         print(f'Run time: {timeit.default_timer() - starttime}')
         return ret
     return wrapper
+
+
+stdin_old = sys.stdin
+def psudo_stdin_set(handler:StringIO):
+    global stdin_old
+    stdin_old = sys.stdin
+    if handler:
+        sys.stdin = handler
+
+def psudo_stdin_restore() -> None:
+    global stdin_old
+    sys.stdin.close()
+    sys.stdin = stdin_old
+
+def psudo_stdout_set(handler:StringIO):
+    if handler:
+        sys.stdout = handler
+
+def psudo_stdout_restore() -> None:
+    sys.stdout.close()
+    sys.stdout = sys.__stdout__
+
+def psudo_io(i:StringIO=None, o:StringIO=None):
+    psudo_stdin_set(i)
+    psudo_stdout_set(o)
+
+def psudo_io_restore():
+    psudo_stdin_restore()
+    psudo_stdout_restore()
+
+
+# def psio(data) -> StringIO:
+#     output = StringIO()
+#     total = len(data)
+#     output.write(f"{total}")
+#     for args, exp in data:
+#         output.write(' '.join(args))
+#     return output
+
+_HACKRANK_TEST_DATA = None
+_HACKRANK_TEST_EXP = None
+def hackrank_test_data(data, exp) -> None:
+    global _HACKRANK_TEST_DATA     
+    global _HACKRANK_TEST_EXP
+    _HACKRANK_TEST_DATA = data
+    _HACKRANK_TEST_EXP = exp
+
+def hackrank_test(func:Callable):
+    def wrapper(*args, **kargs):
+        psin = StringIO(_HACKRANK_TEST_DATA)
+        psout = StringIO('')
+        psudo_io(psin, psout)
+        func(*args, **kargs)   ## >> stdout
+        psudo_stdin_restore()
+        output = psout.getvalue().strip()
+        if output == _HACKRANK_TEST_EXP.strip():
+            print('PASS')
+        else:
+            print('FAIL')
+    return wrapper
+
+
