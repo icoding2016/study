@@ -38,7 +38,7 @@ from utils.testtools import test_fixture
 class Solution:
     def lengthOfLIS(self, nums: List[int]) -> int:
         # return self.lenOfLIS_r(nums)
-        return self.lenOfLIS(nums)
+        return self.lenOfLIS_dp(nums)
 
     # recursive solution:
     # T(2^N) 
@@ -48,14 +48,17 @@ class Solution:
         if cur == None:
             return max(self.lenOfLIS_r(nums[1:], nums[0], 1), self.lenOfLIS_r(nums[1:], None, 0))
         if nums[0] <= cur:
-            return self.lenOfLIS_r(nums[1:], cur, count)
+            # return self.lenOfLIS_r(nums[1:], cur, count)  # seems missing a branch..
+            return max(self.lenOfLIS_r(nums[1:], cur, count), self.lenOfLIS_r(nums[1:],cur,1))
         c1 = self.lenOfLIS_r(nums[1:], nums[0], count+1)
         c2 = self.lenOfLIS_r(nums[1:], cur, count)
         return max(c1, c2)
 
     # DP solution
+    #    for i,j(j>i)    LIS[j]= max(LIS[j],LIS[i]+1) if nums[j]>nums[i]
+    #                            max(LIS[j],1)        if nums[j]<=nums[i]
     # T(N*N)     T= (N-1)+(N-2)+..+1 = N(N-1)/2
-    def lenOfLIS(self, nums: List[int]) -> int:
+    def lenOfLIS_dp(self, nums: List[int]) -> int:
         lis = {i:0 for i in range(len(nums))}
         lis[len(nums)-1] = 1
         for i in range(len(nums)-1, 0, -1):
@@ -66,6 +69,11 @@ class Solution:
                     lis[j] = max(lis[j], 1)
         # print(lis)
         return max([v for v in lis.values()])
+
+    # T(NlogN) solution
+    def lenOfLIS(self, nums: List[int]) -> int:
+        # todo
+        pass
 
     # Wrong anwser, doesn't consider skip cur increasing number
     def lenOfLIS_wrong(self, nums: List[int]) -> int:

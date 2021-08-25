@@ -23,7 +23,7 @@ class Solution:
     INFINITY = sys.maxsize
 
     # T(V*Em*logV)
-    def dijkstra(self, graph_data:list, start:int, end:int=None) -> (int,list):
+    def dijkstra(self, graph_data:list, start:int, end:int=None) -> tuple[int,list]:
         '''Find the shortest path & cost from A to B
           graph_data:  [[src,dst,cost], ...]
         '''
@@ -80,7 +80,7 @@ class Solution:
 
 
 
-    def dijkstra2(self, graph_data:list, start:int, end:int) -> (int,list):
+    def dijkstra2(self, graph_data:list, start:int, end:int) -> tuple[int,list]:
         '''Find the shortest path & cost from A to B
           graph_data:  [[src,dst,cost], ...]
         '''
