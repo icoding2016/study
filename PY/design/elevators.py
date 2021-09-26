@@ -17,10 +17,10 @@ It's important to understand the requirement.
 Object/Use Case:
   Users:  Elevator, Passager, ElevatorController, 
 
-                                  Floors <>----------------
+                                  Floors ------------------
                     _ _ _ _ _ _ _ _^  ^                    |
                    |                  |                    |
-          ElevatorController ----> Elevator(s) <----> Passangers
+          ElevatorController <>--- Elevator(s) <----> Passangers
                   ^                                        |
                   |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |
 
@@ -130,8 +130,10 @@ class Floor():
             self.passangers.remove(passanger)
         self.updateIndecators()
 
-    def getPassangers(self) -> list['Passanger']:
-        return self.passangers
+    def getPassangers(self, dir:'Direction'=None) -> list['Passanger']:
+        if not dir:
+            return self.passangers
+        return [p for p in self.passangers if p.direction()==dir]
 
     def setPassangers(self, passangers:list['Passanger']) -> None:
         self.passangers = passangers
@@ -166,9 +168,9 @@ class Floors():
         if passanger not in self.floors[floor].passangers:
             self.floors[floor].addPassanger(passanger)
 
-    def getPassangers(self, floor:int) -> list['Passanger']:
+    def getPassangers(self, floor:int, dir:'Direction') -> list['Passanger']:
         try:
-            return self.floors[floor].getPassangers()
+            return self.floors[floor].getPassangers(dir)
         except KeyError:
             raise
 
@@ -205,14 +207,15 @@ class Passanger():
         self._id = self.__class__._sn + 1
         self.__class__._sn += 1
         self.start = start if start else random.choice([k for k in env.floors.ids()])  # .randint(min(env.floors), max(env.floors))
-        self.dest = dest if dest else random.choice([f for f in env.floors.ids() if f!=start])
+        self.dest = dest if dest else random.choice([f for f in env.floors.ids() if f!=self.start])
 
     def direction(self) -> 'Direction':
         return Direction.UP if self.dest > self.start else Direction.DOWN
 
     def go(self):
+        self._env.floors[self.start].addPassanger(self)
         Trace(f"Passanger {self._id} summon from floor {self.start}, {self.direction()} (->{self.dest})")
-        self._env.elevator_controller.summon(floor=self.start, passanger=self)
+        self._env.elevator_controller.summon(floor=self.start, direction=self.direction())
 
     def id(self) -> int:
         return self._id
@@ -278,6 +281,10 @@ class Elevator(threading.Thread):
             ElevatorStatus.GOING_UP: self.up,     # -> onArrive -> (park) -> loading
             ElevatorStatus.GOING_DOWN: self.down, # -> onArrive -> (park) -> loading
             ElevatorStatus.LOADING: self.load,    # -> park
+        }
+        self._algo = "SCAN"
+        self._algo_tbl = {
+            "SCAN": self._algoScan,
         }
         self._on_duty = True
         self._lock = RLock()
@@ -378,7 +385,8 @@ class Elevator(threading.Thread):
                     unloaded.append(p)
         Trace(f"{self.name} [floor {self._cur_floor}]: Unloading passangers: {[p.id() for p in unloaded]}")
         self._operationDelay(self._loading_time*len(unloaded))
-        self._controller.log(f"{self.name} transported passangers: {[str(p) for p in unloaded]}")
+        if unloaded:
+            self._controller.log(f"{self.name} : {[str(p) for p in unloaded]}")
         return unloaded
 
     def isFull(self) -> bool:
@@ -428,8 +436,21 @@ class Elevator(threading.Thread):
                 self._actions.append(action)
 
     def _nextDest(self) -> int:
-        """Calculate next dest
+        """Calculate next dest.
+        """
+        algo = self._algo_tbl[self._algo]
+        dst = algo(self._cur_floor, self._cur_direction, self._dests)
+        with self._lock:
+            if not dst:
+                self._cur_direction = None
+            elif dst > self._cur_floor:
+                self._cur_direction = Direction.UP
+            else:  # dst < self._cur_floor:
+                self._cur_direction = Direction.DOWN
+        return dst
 
+    def _nextDest0(self) -> int:
+        """Calculate next dest
            If currently is runnig UP/DOWN, then next dest is the furthest of current direction in self._dests.
                if already the furthest, then reset current direction to None --> will decide the dest in next round
            if the is no current direction, the pick a dest from self._dests
@@ -469,6 +490,31 @@ class Elevator(threading.Thread):
                     self._cur_direction = Direction.UP if dst > self._cur_floor else Direction.DOWN
         return dst
 
+    def _algoScan(self, cur_floor:int, cur_dir:Direction, dests:list[int]) -> int:
+        """SCAN algorithm to select next dest.
+           When there is dest in dests, goes UP-most, then DOWN-most, and keep looping.
+           When there is no dest in dests, stay where it is.
+        """
+        if not dests:
+            return None
+        sd = sorted(dests)
+        if not cur_dir:  # pick a direction
+            if len(dests) == 1:
+                return dests[0]
+            dst = sd[0] if abs(cur_floor-sd[0] <= cur_floor-sd[-1]) else sd[-1]   # pick the closer end
+            return dst
+        elif cur_dir == Direction.UP:
+            if sd[-1] > cur_floor:
+                return sd[-1]
+            else:  # turn Down
+                return sd[0]  
+        else:  # Direction.DOWN
+            if sd[0] < cur_floor:
+                return sd[0]
+            else:
+                return sd[-1]
+            
+
     def park(self, floor:int):
         """FSM handler: The elevator parks on current floor (door close).
         """
@@ -477,13 +523,9 @@ class Elevator(threading.Thread):
                 self._setNextAction(Action(act=ElevatorStatus.LOADING, data=[self._cur_floor]))
                 return
             dst = self._nextDest()
-            direction = None
-            if dst and dst != self._cur_floor:
-                direction = Direction.UP if dst > self._cur_floor else Direction.DOWN
             if not dst:
                 # Trace(f"{self.name} [floor {self._cur_floor}]: Parking...")
-                self._cur_direction = None
-                if self._floors.getPassangers(floor):
+                if self._floors.getPassangers(floor, self._cur_direction):
                     self._setNextAction(Action(act=ElevatorStatus.LOADING, data=[self._cur_floor]))
                 else:
                     self._setNextAction(Action(act=ElevatorStatus.PARK, data=[self._cur_floor]))
@@ -508,13 +550,9 @@ class Elevator(threading.Thread):
             Trace(f"{self.name} [floor {self._cur_floor}]: Door opens ...")
             self.unloadPassangers()
             # loading
-            passangers = self._floors[self._cur_floor].getPassangers()
+            passangers = self._floors[self._cur_floor].getPassangers(self._cur_direction)
             loaded = []
-            alldone = False
-            if self._cur_direction == None:
-                alldone, loaded = self.loadPassangers(passangers)
-            else:
-                alldone, loaded = self.loadPassangers([p for p in passangers if p.direction() == self._cur_direction])
+            alldone, loaded = self.loadPassangers(passangers)
             # elif self._cur_direction == Direction.UP:
             #     ok, loaded = self.loadPassangers([p for p in passangers if p.dest > self._cur_floor])
             # elif self._cur_direction == Direction.DOWN:
@@ -587,13 +625,14 @@ class ElevatorController(threading.Thread):
         self._active = True
         self._log = []
         self.connectElevators()
+        self._multiSummon = 2  # Notify 2 elevators when summon
         
     def connectElevators(self):
         Trace(f"Controller: connect elevators...")
         for _, e in self._elevators.items():
             e.linkController(self)
 
-    def chooseElevator(self, floor:int, direction:Direction) -> str:
+    def chooseElevator(self, floor:int, direction:Direction) -> list[str]:
         """Choose an elevator to summon from a floor.
            The choice is based on:
              - direction -- the elevator with the running direction towards this floor has higher priority
@@ -604,58 +643,84 @@ class ElevatorController(threading.Thread):
              - elevator x is free (idle)
              - elevator in different direction, (more likely to turn back and arrive earlier)
              - elevator in same direction,  (already missed this floor)
+        Returns:
+            a list of candidates, sorted by priority (high to low)
         """
         candidates = candidates1 = candidates2 = candidates3= []
         chosen_id = None
         for id, e in self._elevators.items():
             if floor == e._cur_floor and e._cur_direction == direction and (e._actions and e._actions[0].act==ElevatorStatus.PARK):
-                return id
+                return [id]
             if floor <= e._cur_floor and e._cur_direction == Direction.DOWN and direction == Direction.DOWN:
                 candidates1.append(id)
             elif floor >= e._cur_floor and e._cur_direction == Direction.UP and direction == Direction.UP:
                 candidates1.append(id)
-            elif e.idle():
+            if e.idle():
                 candidates2.append(id)
             elif direction != e._cur_direction:
                 candidates3.append(id)
         if candidates1:
-            candidates = candidates1
-        elif candidates2:
-            candidates = candidates2
-        elif candidates3:
-            candidates = candidates3
-        else:
-            candidates = [id for id in self._elevators.keys()]
-        chosen_id = min(candidates, key=lambda id: abs(self._elevators[id]._cur_floor - floor))
-        return chosen_id
+            candidates += sorted(candidates1, key=lambda id: abs(self._elevators[id]._cur_floor - floor), reverse=True)
+        if candidates2:
+            candidates += sorted(candidates2, key=lambda id: abs(self._elevators[id]._cur_floor - floor), reverse=True)
+        if candidates3:
+            candidates += sorted(candidates3, key=lambda id: abs(self._elevators[id]._cur_floor - floor), reverse=True)
+        if not candidates1 and not candidates2 and not candidates3:
+            candidates = sorted([id for id in self._elevators.keys()], key=lambda id: abs(self._elevators[id]._cur_floor - floor), reverse=True)
+        return candidates
 
-    def summon(self, floor:int, passanger:Passanger):
+    def summon(self, floor:int, direction:Direction):
         if floor not in self._floors.ids():
             raise ValueError(f'invalid floor {floor}')
-        direction = passanger.direction()
-        eid = self.chooseElevator(floor, direction)
+        eids = self.chooseElevator(floor, direction)
         with self._lock:
-            self._floors[floor].addPassanger(passanger)
             # Signal the chosen elevator to take the task, cancel the summon to the obsoleted candicate elevator if the candidate changes 
-            if self._summons[floor][direction] and self._summons[floor][direction] != eid:
-                elevator = self._elevators[self._summons[floor][direction]]
-                elevator.cancelSummon(floor)
-                Trace(f"Controller: unsummon elevator {elevator.id}")
-            self._summons[floor][direction] = eid
-            self._elevators[eid].onSummon(floor)
-        Trace(f"Controller: summon elevator {eid}")
+            oldSummon = self._summons[floor][direction] if self._summons[floor][direction] else []
+            self._summons[floor][direction] = eids[:self._multiSummon]
+            for eid in self._summons[floor][direction]:
+                self._elevators[eid].onSummon(floor)
+            for eid in oldSummon:
+                if eid not in self._summons[floor][direction]:
+                    self._elevators[eid].cancelSummon(floor)
+                    Trace(f"Controller: cancelSummon elevator {eid}")
+        Trace(f"Controller: summon elevator(s) {self._summons[floor][direction]}")
 
     def summonDone(self, floor:int, direction:Direction):
-        """The elevator notify the controller the summon is fullfilled."""
+        """The elevator notify the controller for fulfilling the summon request."""
         if floor not in self._floors.ids():
             raise ValueError(f'invalid floor {floor}')
-        directions = [direction] if direction else [Direction.UP, Direction.DOWN]
         with self._lock:
-            for dir in directions:
-                eid = self._summons[floor][dir]
-                if eid:
-                    self._summons[floor][dir] = None
-                    # self._elevators[eid].cancelSummon(floor)
+            requires_summon = self._checkSummon(floor, direction)
+            for d in requires_summon:
+                if not requires_summon[d]:
+                    self._summons[floor][d] = []
+
+    def _checkSummon(self, floor:int=None, dir:Direction=None) -> bool:
+        """Check if the summon is still required for the floor(s)/diretion(s).
+           If summon is required, trigger the summon.
+           The typical scenario is: 
+               when an elevator is summoned to a floor and loaded the passangers, it will 'clear' the summon task. 
+               However it may happened that some passangers are not able to onboard,
+               they will press the button again the trigger a new summon.
+               This check summon is to simulate this 'resummon' behavior.
+        Returns:
+           bool.   True if requirs re-summon, False otherwise.
+        """
+        floors = [floor] if floor else self._floors
+        dirs = [dir] if dir else [Direction.UP, Direction.DOWN]
+        require_summon = {Direction.UP:False, Direction.DOWN:False}
+        for f in floors:
+            up = down = False
+            ps = self._floors[f].passangers
+            for p in ps:
+                if p.direction() in [dirs]:
+                    require_summon[p.direction()] = True
+                if require_summon[Direction.UP] and require_summon[Direction.DOWN]:
+                    break
+            for d in [Direction.UP, Direction.DOWN]:
+                if require_summon[d]:
+                    self.summon(f, d)
+        return require_summon
 
     def log(self, info:str):
         self._log.append(info)
@@ -668,6 +733,7 @@ class ElevatorController(threading.Thread):
         while self._active:
             # self.algo.schedule(current job/passager info)
             time.sleep(1)
+            # self._checkSummon()
             pass
         print('Elevator controller shutting down...')
 
@@ -707,14 +773,15 @@ class ElevateSimu(threading.Thread):
             p.go()
             allpassangers.append(str(p))
             if self._stop:
-                Trace(f"All passangers: {allpassangers}")
+                Trace(f"All passangers({len(allpassangers)}): {allpassangers}")
                 break
 
     def stop(self):
         self._stop = True
         for e in self.env.elevators.values():
             e.stop()
-        Trace(f"Transported passangers: \n{self.env.elevator_controller.readLog()}")
+        log = self.env.elevator_controller.readLog()
+        Trace(f"Transported passangers ({len(log)}): \n{log}")
         self.env.elevator_controller.stop()
 
 
