@@ -2,6 +2,8 @@ from django.shortcuts import render
 from rest_framework import response, serializers
 
 from .models import ToDo
+from .serializers import ToDoSerializer
+from .form import NewTodoForm
 
 
 ####################################################################
@@ -11,10 +13,24 @@ from .models import ToDo
 from django.http import HttpResponse, Http404
 
 def home(request):
-    todos = ToDo.objects.all()
-
-    # rsp = HttpResponse('<p>Home view</p>')
-    return render(request, 'home.html', {'todos':todos, })
+    #if request.method == 'GET':
+    #    rsp = HttpResponse('<p>Home view</p>')
+    context = {}
+    if request.method == 'POST':
+        newTodoForm = NewTodoForm(request.POST)
+        if newTodoForm.is_valid():
+            task = newTodoForm.cleaned_data['task']
+            handle_time = newTodoForm.cleaned_data['handle_time']
+            create_time = newTodoForm.cleaned_data['create_time']
+            data = {'task':task, 'handle_time':handle_time, 'create_time':create_time}
+            todo_serializer = ToDoSerializer(data=data)
+            if todo_serializer.is_valid():
+                todo_serializer.save()
+    else:
+        context['form'] = NewTodoForm()
+    todo = ToDo.objects.all()
+    context['list'] = todo
+    return render(request, 'todo_list.html', context)
 
 
 def todo_detail(request, id):
@@ -28,20 +44,7 @@ def todo_detail(request, id):
 
 
 ####################################################################
-# Solution 2: Use rest_framework viewsets
-# ModelViewSet is a special view that Django Rest Framework provides.
-# It will handle GET and POST for Heroes without us having to do any more work.
-
-from rest_framework import viewsets
-from .serializers import ToDoSerializer
-
-class ToDoViewSet(viewsets.ModelViewSet):
-    queryset = ToDo.objects.all().order_by('handle_time')
-    serializer_class = ToDoSerializer
-
-
-####################################################################
-# Solution 3: use standard restful API view from rest_framework
+# Solution 2: use standard restful API view from rest_framework
 # https://www.django-rest-framework.org/api-guide/views/
 
 from rest_framework.views import APIView
@@ -99,11 +102,10 @@ class ToDoListViewDefault(APIView):
         try:
             todo = ToDo.objects.all().order_by('handle_time')
             serializer = ToDoSerializer(todo, many=True)
-            context = {list:todo}
         except ToDo.DoesNotExist:
             raise Http404('Record not found')
         return Response(serializer.data)
-        return render(request, 'todo_list.html', context)
+        # return render(request, 'todo_list.html', context)
 
 class ToDoListView(APIView):
 
@@ -111,10 +113,23 @@ class ToDoListView(APIView):
         try:
             todo = ToDo.objects.all().order_by('handle_time')
             # serializer = ToDoSerializer(todo, many=True)
-            context = {list:todo}
+            context = {'list':todo}
         except ToDo.DoesNotExist:
             raise Http404('Record not found')
         # return Response(serializer.data)
         return render(request, 'todo_list.html', context)
+
+
+####################################################################
+# Solution 3: Use rest_framework viewsets
+# ModelViewSet is a special view that Django Rest Framework provides.
+# It will handle GET and POST for Heroes without us having to do any more work.
+
+from rest_framework import viewsets
+from .serializers import ToDoSerializer
+
+class ToDoViewSet(viewsets.ModelViewSet):
+    queryset = ToDo.objects.all().order_by('handle_time')
+    serializer_class = ToDoSerializer
 
 
