@@ -7,4 +7,4 @@ class ToDo(models.Model):
     handle_time = models.DateTimeField()
 
     def __str__(self) -> str:
-        return self.task
+        return f"Task:{self.task}, time:{self.handle_time}, created:{self.create_time}"
