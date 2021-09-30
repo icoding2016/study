@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ToDo Info</title>
+</head>
+<body>
+    <h1>ToDo Tasks</h1>
+     
+    <ul>
+      {% for t in list %}
+        <li>task: {{ t.task }},  
+            time: {{ t.handle_time }},
+            created: {{ t.create_time }}
+        </li>
+      {% endfor %}
+    </ul>
+
+    <br>
+    <h2>Add New Tasks</h1>
+    <form method="POST">
+        {{ form }}
+        <input type="submit" value="Submit">
+    </form>
+        
+</body>
+</html>
