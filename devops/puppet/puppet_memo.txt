@@ -538,19 +538,24 @@ class apache::ssl ($disable = "false") {
 -----------------------------
 
 cat manifests/site.pp
-node 'webserver' {
+node default {
   include webserver
 }
 
 cat site/webserver/manifests/init.pp
 class webserver {
-  package {'apache':
+  package {'apache2':
     ensure => installed,
   }
-  package {'php':
+  exec { "apt-get update":
+		command => "/usr/bin/apt-get update",
+  }
+  Exec["apt-update"] -> Package <| |>
+  
+  package {'php7.4':
     ensure => installed,
   }
-  package {'mysql':
+  package {'mysql-server':
     ensure => installed,
   }
 }
