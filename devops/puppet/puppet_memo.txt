@@ -1,0 +1,379 @@
+[sandbox environment & setup]
+
+vagrant/virtualbox 
+install vagrant and virtualbox
+
+
+Setup VagrantBox: https://app.vagrantup.com/boxes/search
+	vagrant box add <box-name>
+	e.g. pick ubuntu/xenial64
+		d:\VMs\vagrant
+		λ vagrant box add ubuntu/xenial64                                                                                   
+		==> box: Loading metadata for box 'ubuntu/xenial64'                                                                 
+			box: URL: https://vagrantcloud.com/ubuntu/xenial64                                                              
+		==> box: Adding box 'ubuntu/xenial64' (v20210928.0.0) for provider: virtualbox                                      
+			box: Downloading: https://vagrantcloud.com/ubuntu/boxes/xenial64/versions/20210928.0.0/providers/virtualbox.box 
+
+	vagrant init ubuntu/xenial64    # init the vagrant-box
+	e.g
+		d:\VMs\vagrant
+		λ vagrant.exe init ubuntu/xenial64                                          
+		A `Vagrantfile` has been placed in this directory. You are now ready to `vagrant up` your first virtual environment! 
+
+	update the Vagrantfile with hostname etc.
+		config.vm.box = "ubuntu/xenial64"
+		config.vm.hostname = "master.puppet.vm"
+
+		config.vm.provider "virtualbox" do |vb|
+			# Display the VirtualBox GUI when booting the machine
+			vb.gui = true
+			#   # Customize the amount of memory on the VM:
+			vb.memory = "1024"
+		end
+	
+	vagrant up		# startup the vagrant box
+	
+	vagrant ssh		# ssh to the vb
+	
+	# then install puppet server, puppet client
+
+
+
+
+Prepare Puppet master
+How to Install Puppet on Ubuntu:
+	Step 1: Update Package List.
+	Step 2: Set Up Hostname Resolution.
+	Step 3: Install Puppet Server on Master Node.
+	Step 4: Install Puppet Agent on Client Node.
+	Step 5: Sign Puppet Agent Certificate.
+
+in the 'master host' (VM)
+	# Enable the Puppet package repositories, 
+	vagrant@master:~$ wget https://apt.puppet.com/puppet7-release-focal.deb
+	vagrant@master:~$ sudo dpkg -i puppet7-release-focal.deb
+	vagrant@master:~$ sudo apt update
+	vagrant@master:~$ sudo apt install puppetserver
+	
+	vagrant@master:~$ sudo systemctl start puppetserver        # on VM this might fail, due to memory limit
+	vagrant@master:~$ sudo journalctl -xesudo journalctl -xe
+	  Oct 01 02:27:25 master systemd[1]: puppetserver.service: Failed with result 'start-limit-hit'.
+	# to change the memory allocation for puppetserver
+	vagrant@master:~$ sudo vim /etc/default/puppetserver
+		JAVA_ARGS="-Xms2g -Xmx2g -Djruby.logger.class=com.puppetlabs.jruby_utils.jruby.Slf4jLogger"
+		to
+		JAVA_ARGS="-Xms256M -Xmx512M -Djruby.logger.class=com.puppetlabs.jruby_utils.jruby.Slf4jLogger"
+
+	vagrant@master:~$ sudo systemctl start puppetserver
+	vagrant@master:~$ sudo systemctl status puppetserver    # check
+	vagrant@master:~$ sudo systemctl enable puppetserver    # enable the auto start ofr puppet
+	
+	# add puppet tool path in .bashrc
+	vagrant@master:~$ sudo vim .bashrc
+			PATH=$PATH:/opt/puppetlabs/bin/
+	vagrant@master:~$ . .bashrc
+	vagrant@master:~$ which puppet
+	/opt/puppetlabs/bin//puppet
+
+	# update hosts for the hostname
+	sudo vim /etc/hosts
+		127.0.0.1 localhost puppet master.puppet.vm
+		# 127.0.2.1 master.puppet.vm master
+
+
+
+=============================
+Example
+
+The default codebase:  /etc/puppetlabs/code/environments/production/
+vagrant@master:~$ tree /etc/puppetlabs/code/environments/production/
+	/etc/puppetlabs/code/environments/production/
+	├── data
+	├── environment.conf
+	├── hiera.yaml
+	├── manifests
+	│   └── site.pp
+	└── modules
+
+add site.pp
+	vagrant@master:~$ sudo vim /etc/puppetlabs/code/environments/production/manifests/site.pp
+		e.g.
+		node default {
+		}
+
+install modules 
+	git
+	puppet module install puppet-nginx
+	
+ 
+	e.g.
+	vagrant@master:/etc/puppetlabs/code/environments/production/modules$ sudo apt install -y git
+	vagrant@master:/etc/puppetlabs/code/environments/production/modules$ puppet module install puppet-nginx
+	
+	
+==============================
+control_repo
+
+
+- puppetfile
+A Puppetfile is a formatted text file that specifies the modules and data that you want brought into your control repo. 
+ 
+
+===============================
+[TOOLS]
+
+r10k
+puppetlabs/r10k: Smarter Puppet deployment
+
+r10k is a code management tool that allows you to manage your environment configurations (such as production, testing, and development) in a source control repository. You must manually deploy code changes from your control repository using the r10k command line tool on your primary server and all compilers.
+
+
+PDK (Puppet Development Kit)
+ 
+ 
+===============================
+
+https://forge.puppet.com/modules
+
+puppet module install puppet-nginx --version       # install existing module from forg.puppet.com
+
+
+dockeragent module (setup a dockers running agent, for exercise environments)
+
+login to the docker nodes:
+  docker exec -it <node_name> bash
+  
+
+================================
+Use regex for maching node:
+node /<regex>/ {        # e.g. node /^web/   match all nodes start with 'web'
+}
+
+
+=================================
+prepare cert
+
+on master, need to sign agents' cert so that agents can contact master
+
+[master]
+puppetserver ca list
+puppetserver ca sign --certname <agent_node_name>
+
+
+docker exec -it <agent_node_name> bash
+[agent]
+puppet agent -t
+
+
+
+=============================
+facter   
+
+The tool on agent to collect the status information of agent.
+
+
+ 
+=============================
+Puppet code
+  Module
+	metadata.json     # module information (used by forge.puppet.com)
+    /Manifests 
+		One class per manifest.  (the class named after the module in init.pp)
+	/files
+		static files
+	/templates
+		dynamic templates
+	/lib
+		additional code
+	/task
+		Extemporary tasks
+	readme.md
+
+
+
+
+================================
+Example: 
+Task: Puppet for setting up minecraft server
+
+Try Manual Steps of setting up minecraft server:
+
+Puttet (repo):
+# root level
+Puppetfile		# the dependencies
+	e.g.
+	"
+	mod 'puppetlabs-stdlib', '6.2.0'
+	mod 'puppetlabs-apt', '7.3.0'
+	mod 'puppetlabs-translate', '2.1.0'
+	mod 'puppet-yum', '4.0.0'
+	mod 'puppetlabs-concat', '6.1.0'
+	mod 'puppetlabs-yumrepo_core', '1.0.4'
+	mod 'elastic-elastic_stack', '7.0.0'
+	"
+
+environment.config
+	e.g.
+	"
+	modulepath = site:modules:$basemodulepath
+	"
+	
+manifests/
+	site.pp      # main site config, define the nodes
+		e.g
+		"
+		node default {
+		}
+		node 'master.puppet.vm' {
+			include role::master_server
+		}
+		node /^web/ {
+			include role::app_server
+		}
+		node /^db/ {
+			include role::db_server
+		}
+		node 'minecraft_server.puppet.vm' {
+			include role::minecraft_server
+		}		
+		"
+site/
+	profile/
+		manifests/
+			base.pp
+			agent_nodes.pp
+			app.pp
+			web.pp
+			db.pp
+			ssh_server.pp
+			minecraft.pp
+				e.g.
+				"
+				class profile::minecraft {
+					# include minecraft       # defined in the minecraft module
+					class {'minecraft':
+						install_root => '/opt/games',
+					}
+				}
+				"
+	role/
+		manifests/
+			master_server.pp
+			app_server.pp
+			db_server.pp
+			minecraft_server.pp
+				e.g.
+				"
+				class role::minecraft_server {
+					include profile::base
+					include profile::minecraft
+				}
+				"
+				
+	<module_name>/
+		manifest/
+			init.pp  
+				"
+				class <module_name> {
+				}
+				"
+	minecraft/
+		manifests/
+			init.pp
+				"
+				class minecraft (
+					$url = 'https://launcher.mojang.com/v1/objects/a16d67e5807f57fc4e550299cf20226194497dc2/server.jar'
+					$install_root = '/opt/minecraft'
+				)
+				{
+					file {"$install_root":
+						ensure => directory,
+					}
+					file {"{$install_root}/minecraft_server.jar":
+						ensure => file,
+						source => $url,
+						before => Service['minecraft'],
+					}
+					package {'java':
+						ensure => present,
+					}
+					file {"{$install_root}/eula.txt":
+						ensure => file,
+						content => 'eula=true',
+					}
+					file {'/etc/systemd/system/minecraft.service':
+						ensure => file,
+						# source => 'puppet:///modules/minecraft/minecraft.service',   	# using static file
+						content => epp('minecraft/minecraft.service', {					# use template file
+							install_root => $install_root,
+							}),
+					}
+					service {'minecraft':
+						ensure => running,
+						enable => true,
+						require => [Package['java'], File["{$install_root}/eula.txt"], File['/etc/systemd/system/minecraft.service']],
+					}
+				}
+				"
+		templates/
+			minecraft.service.epp     # a template file for minecraft service configuration
+				"
+				[Unit]
+				Description=Minecraft Server
+				
+				Wants=network.target
+				After=network.target
+				
+				[Service]
+				WorkingDirectory=<%= $install_root  %>
+				ExecStart=/usr/bin/java -Xmx512M -Xms32M -jar minecraft_server.jar nogui
+				
+				[Install]
+				WantedBy=multi-user.target
+				"
+		files/
+			minecraft.service     # a static file for minecraft service configuration
+				"
+				[Unit]
+				Description=Minecraft Server
+				
+				Wants=network.target
+				After=network.target
+				
+				[Service]
+				WorkingDirectory=/opt/minecraft
+				ExecStart=/usr/bin/java -Xmx512M -Xms32M -jar minecraft_server.jar nogui
+				
+				[Install]
+				WantedBy=multi-user.target
+				"
+---------------
+
+control the order	
+  use before/after		
+  
+
+====================================  
+  
+sudo apt update
+sudo apt install puppet
+
+sudo apt install systemd
+sudo apt install puppetmaster  
+  
+puppet-apply - Apply Puppet manifests locally
+puppet apply <pp file>
+
+
+
+cd /etc/puppet/
+cd modules
+
+
+
+  
+===============================
+Resources:
+- learn.puppet.com  
+
+https://www.linkedin.com/learning/learning-puppet/install-your-puppet-master?u=2090948
