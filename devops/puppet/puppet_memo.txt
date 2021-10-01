@@ -1,3 +1,16 @@
+- Puppet: 
+  Refers to the product Puppet, the language Puppet, the entire Puppet ecosystem and also the name of the company that wrote the software.
+
+- Puppet Master: 
+  A Puppet Master is an installation of Puppet where Puppet code is compiled, and also where SSL certs are verified and signed. Also known as a "Compile Master". In a "monolithic" Puppet Master installation in Puppet Enterprise, the Puppet Master also runs the Puppet Console and PuppetDB. In a "split" installation, the Master, Console and PuppetDB functionality run on different nodes.
+
+- Puppet Server: 
+  The Puppet Server is an application that runs on the Java Virtual Machine (JVM) on the Puppet Master. In addition to hosting endpoints for the certificate authority service, it also powers the catalog compiler, which compiles configuration catalogs for agent nodes, using Puppet code and various other data sources.
+
+If you like, the "Puppet Server" is the implementation of a Puppet Master, which is more like an abstract role
+
+
+============================================
 [sandbox environment & setup]
 
 vagrant/virtualbox 
@@ -101,14 +114,44 @@ add site.pp
 		node default {
 		}
 
-install modules 
+install modules in [<codebase>/modules]
 	git
-	puppet module install puppet-nginx
-	
+	puppetlabs-apt
+	puppetlabs-mysql
+	puppet-nginx
+	puppet-php
+	puppetlabs-apache
  
-	e.g.
-	vagrant@master:/etc/puppetlabs/code/environments/production/modules$ sudo apt install -y git
-	vagrant@master:/etc/puppetlabs/code/environments/production/modules$ puppet module install puppet-nginx
+	e.g.  
+	sudo apt install -y git
+	sudo puppet module install puppet-nginx
+	sudo puppet module install puppetlabs-mysql
+	sudo puppet module install puppetlabs-apt
+
+	tree /etc/puppet/ -L 3
+	/etc/puppet/
+	├── auth.conf
+	├── code
+	│   └── modules
+	│       ├── apt
+	│       ├── concat
+	│       ├── mysql
+	│       ├── nginx
+	│       └── stdlib
+	├── hiera.yaml
+	└── puppet.conf
+
+
+example:
+	code
+	├── manifests
+	│   └── site.pp
+	├── modules
+	└── site
+		└── webserver
+			└── manifests
+				└── init.pp
+puppet apply /etc/puppetlabs/code//manifests/site.pp
 	
 	
 ==============================
@@ -359,7 +402,7 @@ sudo apt update
 sudo apt install puppet
 
 sudo apt install systemd
-sudo apt install puppetmaster  
+sudo apt install puppetmaster  # ??
   
 puppet-apply - Apply Puppet manifests locally
 puppet apply <pp file>
@@ -368,12 +411,169 @@ puppet apply <pp file>
 
 cd /etc/puppet/
 cd modules
+# install modules 
+# if fail "Could not connect via HTTPS to https://forge.puppetlabs.com Unable to verify the SSL certificate", install ca-certificates first
+sudo apt install ca-certificates
+sudo puppet module install puppetlabs-apache
+sudo puppet module install puppet-php
+
+	puppetlabs-apt
+	puppetlabs-mysql
+	puppet-nginx
+	puppet-php
+	puppetlabs-apache
+
+
+# install puppetserver
+wget https://apt.puppet.com/puppet7-release-focal.deb
+sudo dpkg -i puppet7-release-focal.deb
+# sudo apt install -y curl
+#sudo curl https://apt.puppetlabs.com/puppetlabs-release-pc1-xenia l.deb --output puppetlabs.deb
+# sudo dpkg -i puppetlabs.deb
+
+sudo apt update
+[server]
+sudo apt install puppetserver -y
+
+[agent]
+sudo apt install puppet-agent
+sudo systemctl start puppet-agent
+sudo systemctl enable pupet-agent
 
 
 
+
+├── manifests
+│   └── site.pp
+├── modules
+└── site
+    └── webserver
+        └── manifests
+            └── init.pp
+
+
+
+
+
+
+----------------------------------------------
+misc
+
+
+class apache ($disable = "false", $apacheconf = "default") {
+  if $disable == "false" {
+    $installed = present
+    $enable = true
+    $ensure = "running"
+  } else {
+    $installed = absent
+    $enable = false
+    $ensure = "stopped"
+  }
+  case $operatingsystem {
+    'CentOS', 'RedHat': {
+      if $architecture == "x86_64" {
+        package { 'httpd':
+          name   => "httpd.x86_64",
+          ensure => $installed,
+        }
+      } else {
+        package { 'httpd':
+          name   => "httpd.i386",
+          ensure => $installed,
+        }
+      }
+      service { 'httpd':
+        ensure => $ensure,
+        enable => $enable,
+      }
+      file { "http.conf":
+        path   => "/etc/httpd/conf/httpd.conf",
+        owner  => root,
+        group  => root,
+        mode   => 0644,
+        source => $apacheconf ? {
+          'default' => "puppet:///modules/apache/httpd.conf",
+        }
+      }
+    }  
+  }
+}
+
+class apache::ssl ($disable = "false") {
+  include apache
+
+  if $disable == "false" {
+    $installed = present
+    $enable = true
+    $ensure = "running"
+  } else {
+    $installed = absent
+    $enable = false
+    $ensure = "stopped"
+  }
+
+  case $operatingsystem {
+    'CentOS', 'RedHat': {
+      case $architecture {
+        'x86_64': {
+          package { 'mod_ssl':
+            name   => "mod_ssl.x86_64",
+            ensure => $installed,
+            require => Package['httpd'],
+          }
+       }
+        'i386':{
+          package { 'mod_ssl':
+            name   => "mod_ssl.i386",
+            ensure => $installed,
+            require => Package['httpd'],
+          }
+        }
+      }
+    }
+  }
+}
+
+-----------------------------
+
+cat manifests/site.pp
+node 'webserver' {
+  include webserver
+}
+
+cat site/webserver/manifests/init.pp
+class webserver {
+  package {'apache':
+    ensure => installed,
+  }
+  package {'php':
+    ensure => installed,
+  }
+  package {'mysql':
+    ensure => installed,
+  }
+}
+
+
+
+puppet module list
+
+/etc/puppet.conf:
+
+[master]
+  manifest=$confdir/manifests/site.pp
+  modulepath=$confdir/environments/$environment/modules:$confdir/modules
+
+when importing a module it checks for directory-presence, rather than file-presence (init.pp).
+
+
+puppet apply /etc/puppet/manifests/site.pp --modulepath=/etc/puppet/modules 
+ 
   
 ===============================
 Resources:
 - learn.puppet.com  
 
 https://www.linkedin.com/learning/learning-puppet/install-your-puppet-master?u=2090948
+https://www.youtube.com/watch?v=6ncaJxhdgLY
