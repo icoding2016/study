@@ -1,6 +1,12 @@
+import json
+from os import path
 
-def TestJson():
-    STRUCT = """{
+
+# json.loads()  --  deserialize a string
+# json.load()   --  can deserialize a file
+
+
+DTAT = """{
   "name": "urpf-testing",
   "description": "DPC Testing",
   "created by": "hines",
@@ -35,7 +41,7 @@ def TestJson():
 }
 """
 
-    STRUCT1 = """# Reserved test variables:
+DTAT1 = """# Reserved test variables:
 "test_title":           "JunOS basic regression test suite",   # Default is script name.
 "test_data_dir":        "/home/jou/src/google3/ops/netops/lab/testsuites/testdata",
 "test_topology_file":   "junos_regression.topo",
@@ -77,12 +83,25 @@ def TestJson():
   "chkstatus": 0
 }
 """
-    import json
-    j1 = json.loads(STRUCT)
+
+def TestJson():
+    j1 = json.loads(DTAT)
     print(j1)
     for n,v in j1.items():
         print("{} = {},   {},{}".format(n,v, type(n), type(v)))
 
 
+def testJsonFile():
+  fn = 'sample.json'
+  with open(fn) as f:
+    jdata = json.load(f)
+    # print(type(jdata), jdata)
+    for k,v in jdata.items():
+      print(f"{k}:{v}")
+
+
+
+
 if __name__ == "__main__":
-    TestJson()
+    # TestJson()
+    testJsonFile()
