@@ -1,0 +1,33 @@
+{
+    "name": "urpf-testing",
+    "description": "DPC Testing",
+    "created by": "hines",
+    "topology": {
+      "device_list": [
+        {"name":"mx960-6","type":"juniper"},
+        {"name":"ixia-term2","type":"ixia","port":"8069"}
+      ]
+    },
+    "test_cases": {
+      "1": {"name": "Setup", "args":{}},
+      "2": {"name": "AverageMatchEdge", "args":{}},
+      "3": {"name": "AverageMatchEdgeuRPF", "args":{}},
+      "4": {"name": "TopMatchMinuRPF", "args":{}},
+      "5": {"name": "TopMatchEdgeuRPF", "args":{}},
+      "6": {"name": "WorstMatchEdgeuRPF", "args":{}},
+      "7": {"name": "NoFilter", "args":{}},
+      "8": {"name": "TopMatchMin", "args":{}},
+      "9": {"name": "EnableuRPF", "args":{}},
+      "10": {"name": "WorstMatchEdge", "args":{}},
+      "11": {"name": "TopMatchEdge", "args":{}},
+      "12": {"name": "Clean", "args":{}}
+      },
+    "dut_int": {
+      "src_list": ["xe-11/0/0"],
+      "dest_list": ["xe-11/1/0"]
+    },
+    "tester_int": {
+      "src_list": ["ixia1:3/3"],
+      "dest_list": ["ixia1:3/4"]
+    }
+  }

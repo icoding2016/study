@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: pkg-example-jrx
+Version: 0.1.0
+Summary: A packaging example
+Home-page: http://somewhere.com
+Author: jrx
+Author-email: jrx@some.where
+License: UNKNOWN
+Description: ### This is an example for Python packaging.
+        
+        To demostrate how to create a python package using setuptools.
+        
+Platform: UNKNOWN
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
