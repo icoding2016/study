@@ -1,0 +1,143 @@
+Ansible:
+  Infrastructure as code.  (Ansible vs Terraform vs Puppet)
+  Agent-less, (using ssh)
+  'Push' type configuration tool.  (not like puppet/chef which have client installed)
+  Python based
+  
+
+=========
+- install
+  sudo apt update
+  sudo apt install software-properties-common
+  sudo apt-add-repository  -y --update ppa:ansible/ansible  # ansible personal package archive
+  sudo apt install ansible   # python2
+  sudo pip3 install ansible    # python3 version
+  
+  
+- System
+  ansible control  
+  ansible playbook (.yml)
+  
+  LocalMachine:   .......(ssh)........  Nodes
+	|- modules
+	|   |- Playbooks (yuml)
+	|
+	|- Inventory
+	    |- hosts  (hosts/groups)
+  
+  
+  Playbook:
+    Module
+	Task
+	Role
+	Fact
+	Play
+	Handler
+	Notifier
+	Tag
+  
+  Ansible Roles
+    Roles are a collection of tasks, which can be moved from one playbook to another, can be run independently but only through a playbook file.
+    When dealing with extensive playbooks, it is easier to split the tasks into roles. This also helps in reusing the roles in the future. 
+	Roles are stored in separate directories and have a particular directory structure.
+	.
+	`-- role1
+		|-- defaults
+		|   `-- main.yml
+		|-- handlers
+		|   `-- main.yml
+		|-- meta
+		|   `-- main.yml
+		|-- README.md
+		|-- tasks
+		|   `-- main.yml
+		|-- tests
+		|   |-- inventory
+		|   `-- test.yml
+		`-- vars
+			`-- main.yml
+
+	To create the directory tree for a role, use the command:
+	  # ansible-galaxy init <role_name>
+
+
+  
+- remote hosts access
+  For ansible (controller) to access other hosts. 2 options:
+  1. log in with pass (--ask-pass)
+     e.g. ansible all -m ping -u user --ask-pass
+  2. put the ssh password in the hosts file
+     <host> ansible_ssh_user=<user_name> ansible_ssh_pass=<password>
+     e.g.  in /etc/ansible/hosts
+	 [servers]
+	 vm1.local ansible_ssh_user=jerry ansible_ssh_pass=<password>
+  Note: 
+    To use ssh/pass for the connection. controller need 'sshpass' to be installed. "sudo apt install sshpass"
+	Most of the issues happen while connecting Ubuntu machines in hosts. Ansible required which user want to connect, because Ubuntu doesn't have a default root user. So specify the user in ansible.cfg or hosts
+    The public key for root has to be on the server you want to reach as well, not only the public key from your non-root-user.
+	
+  
+- Ansible config
+  /etc/ansible.cfg
+  
+  /etc/hosts   # the default inventory
+  e.g.
+	localhost     ansible_connection=local
+	vm1.local     ansible_connection=ssh   ansible_user=jerry  ansible_ssh_pass=<pass>
+	vm2.local     ansible_connection=ssh   ansible_user=jerry  ansible_ssh_pass=<pass>
+	[controller]
+	localhost
+
+	[clients]
+	# regex is supported.
+	# You can specify a range and stride (increments between sequence numbers) of host names:
+	# e.g. host[<start>:<end>:<stride>].remaining_part
+	#      host-[a:h].xx.com
+	vm[1:2].local    # use regex
+
+	[vms:children]
+	controller
+	clients
+
+  Organizing host and group variables
+  Although you can store variables in the main inventory file, storing separate host and group variables files may help you organize your variable values more easily. 
+  Host and group variable files must use YAML syntax. Valid file extensions include ‘.yml’, ‘.yaml’, ‘.json’, or no file extension.
+  Ansible loads host and group variable files by searching paths relative to the inventory file or the playbook file. 
+  If your inventory file at /etc/ansible/hosts contains a host named ‘vm1’ that belongs to two groups, ‘vms’ and ‘webservers’, that host will use variables in YAML files at the following locations:
+	/etc/ansible/group_vars/vms # can optionally end in '.yml', '.yaml', or '.json'
+	/etc/ansible/group_vars/webservers
+	/etc/ansible/host_vars/vm1
+    
+  
+  ref: https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+
+- Cmd & Usage
+  Ansible ad-hoc commands
+    ansible -i <inventory> <hosts|all> -m <module/cmd> -e 
+	  e.g
+	  ansible vm1.local -m ping
+	  ansible -i hosts vms -m ping    # vms defined in inventory "hosts"
+	  ansible -i hosts clients -m yum -a "name=nginx state=present"    # yum module for package installation.
+
+
+  Ansible Playbooks
+    Ansible Playbooks are the way of sending commands to remote systems through scripts
+  $ ansible-playbook <playbook_name.yml> -i <inventory>
+
+
+
+
+
+
+
+
+
+
+===================================
+
+
+
+
+
+
+  
