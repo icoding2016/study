@@ -3,6 +3,18 @@
 # Basic shell operations
 #
 
+echo -x     # output all the shell command lines to std
+
+# echo
+# echo by itself displays a line of text. It will take any thing within the following "..." two quotation marks, literally, and just print out as it is. 
+# However with echo -e you're making echo to enable interpret backslash escapes. So with this in mind here are some examples
+# INPUT: echo "abc\n def \nghi" 
+# OUTPUT:abc\n def \nghi
+# 
+# INPUT: echo -e "abc\n def \nghi"
+# OUTPUT:abc
+#  def 
+# ghi
 
 
 # output all odd numbers between [1,99]
@@ -124,6 +136,50 @@ echo "scale=4;$s/$count" | bc -l | xargs printf "%.3f"
 
 
 
+
+
+# $() vs ${}
+#
+# $(command) is “command substitution”. it runs the command, captures its output, and inserts that into the command line that contains the $(…); e.g.,
+# e.g.
+#   $ ls -ld $(date +%B).txt
+#   -rwxr-xr-x  1 Noob Noob    867 Jul  2 11:09 July.txt
+#
+# ${…} lets you get the value of a variable, it also support some str operation with specific flags 
+# e.g.
+#   $ animal=cat
+#   $ echo ${animal}s
+#   cats
+# 
+# ! in ${...} introduced a level of variable indirection
+# e.g.
+#  $ animal=cat
+#  $ echo $animal
+#  cat
+#  $ cat=tabby
+#  $ echo $cat
+#  tabby
+#  $ echo ${!animal}
+#  tabby 
+#
+# ${#...}  -- count the len of the str
+# e.g.
+#   $ echo ${#animal}   # $animal = cat
+#   3    
+#
+# ${var1#${var2}} -- to return the remaining part of var1 after removing the lead var2 in var1
+# e.g.
+#   $ version_prefix=ver_
+#   $ version=ver_3.2.0
+#   $ echo ${version#${version_prefix}}
+#   3.2.0
+#
+# ${parameter…something_else} constructs
+#
+
+version_prefix=ver_
+version=ver_3.2.0
+echo ${version#${version_prefix}}
 
 
 
