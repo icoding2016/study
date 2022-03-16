@@ -1,0 +1,228 @@
+Docker image vs container
+Docker images are read-only templates used to build containers. Containers are deployed instances created from those templates
+So static-template vs dynamic instance
+
+
+# docker registries
+docker search <keyword>
+
+docker login 
+
+
+docker pull <image-name>       # repo/imange
+docker push <image-tag>
+
+
+# run a local docker registry in docker
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+# upload a docker image into local registry
+docker tag ubuntu:latest localhost:5000/my-registry/my-ubuntu:1
+docker push ubuntu:latest localhost:5000/my-registry/my-ubuntu:1
+
+
+# Save / Load image locally (into file)
+e.g.
+docker save -o my-images.tar.gz debian:sid busybox ubuntu:14.04
+-o      : output
+
+docker load -i my-images.tar.gz
+-i      : input
+
+
+# remove a docker image from local repo.
+docker rmi <image-name:tag>
+docker rmi <image-id>
+
+
+
+
+# takes container back to image (with update if any)
+docker commit <container-id> <image-tag>
+
+# tag(name) an image
+docker tag <image-id> <tag>
+
+# 
+
+# run container
+docker run -it <image> <cmd>
+-it    i:interactive, t:terminal
+-d     detached
+-e     environment    -e <name>=<value>
+--memory   max-allowed-memory
+--cpu-shares
+--cpu-quote
+e.g. 
+docker run -ti -d ubuntu:latest bash --name <container-tag>
+
+# attach to a detached docker container
+docker attach <container-name>
+# detach from a container
+ctrl^p ctrl^q
+
+
+# attach to a running container with a new process (cmd)
+docker exec -ti <container-tag> <cmd>
+
+# exit docker
+exit 
+or ctrl^d
+
+# 
+docker ps [-l|-a]
+-a   all
+-l   last
+
+
+# docker log
+docker logs <container-tag>
+
+# kill & remove container
+docker kill <contrain-tag>
+docekr rm <container-tag>
+
+
+# port and networking
+
+docker network ls
+
+
+docker run -p <port-internal>:<port-external> <image> <cmd>       # publish port (default TCP)
+docker run -p <port-internal>/udp:<port-external> <image> <cmd> 
+-p    publish
+e.g.
+  docker run -it -p 45678:r5678 -p 45679:45679 --name echo-server ubuntu:latest bash
+  nc -lp 45678 | nc -lp 55679
+  
+# or let docker choose the external port
+docker run -p <port-internal> <image> <cmd>
+docker port <container-tag>
+
+
+# connecting directly b/t containers
+docker network create <network-tag>
+
+docker run -ti --net <network-tag> --name <container-tag> <image> <cmd>
+e.g. 
+  docker run -ti --net learning --name cat-server ubuntu  bash
+  docker run -ti --net learning --name dog-server ubuntu  bash
+
+  from container dog-server, can ping cat-server
+
+
+docker network create cat-only
+docker network connect cat-only cat-server
+
+
+# containers volumes  '-v'
+# - persistent
+# - ephemeral
+docker run -it -v <local-path>:<container-path> <image> <cmd>
+e.g.
+  docker run -it -v ./code:/home/root/code ubuntu bash
+  
+
+docker inspect 
+
+
+
+######################
+# Dockerfile
+docker build -t <image-tag> <path-to-dockerfile>
+
+the 'path-to-dockerfile' could be a 
+  - dir (the cmd looks for Dockerfile in the path)
+    e.g.  
+	docker build .
+	
+  - a file,  need to be specified with  -f or --file
+    e.g.
+	docker build -f ctx/Dockerfile .
+	docker build - < Dockerfile          # read Dockerfile from STDIN
+	
+  - a url,  e.g.
+    docker build https://github.com/docker/rootfs.git#container:docker     -- the docker folder in github
+	docker build github.com/creack/docker-firefox
+	
+  - a tar
+	docker build http://server/context.tar.gz               (the tarball contains the build context)
+
+
+
+
+# "Each line of a Docker file makes a new, independent image based on the previous line's image"
+# "Each line in dockerfile has its own 'docker run' and 'docker commit'", 
+# so the env or process in one line does not live to the next line.  
+# each step (line)'s output of buiding the docker image is cached
+# processes starts on one line will nt be running on the next line. Environment variables you set will not be set on the next line.
+# 
+# avoid have large-file span lines of the dockerfile. otherwise the docker image will be huge.
+
+
+
+ENTRYPOINT or CMD
+Ultimately, both ENTRYPOINT and CMD give you a way to identify which executable should be run when a container is started from your image. 
+In fact, if you want your image to be runnable (without additional docker run command line arguments) you must specify an ENTRYPOINT or CMD.
+
+The CMD instruction has three forms:
+  CMD ["executable","param1","param2"] (exec form, this is the preferred form)
+  CMD ["param1","param2"] (as default parameters to ENTRYPOINT)
+  CMD command param1 param2 (shell form)
+There can only be one CMD instruction in a Dockerfile. If you list more than one CMD then only the last CMD will take effect.
+
+CMD can be overriden by the command-line docker run arguments.
+
+CMD commands are ignored by Daemon when there are parameters stated within the docker run command.
+ENTRYPOINT instructions are not ignored but indead are appended as command line parameters by treating those as arguements of the command. 
+
+The `ENTRYPOINT` statement is for making your containers look like normal programs.
+
+
+The Docker file WORKDIR command changes directories both for the rest of the Docker file, and in the finished image
+
+
+# Orchestration:
+# single-computer orchestration -- docker compose
+To use docker compose:
+  Dockerfile
+  docker-compose.yml
+  docker compose up
+
+e.g.
+ docker-compose up -d
+ ./run_tests
+ docker-compose down
+
+
+#==========
+
+Docker interal 
+- Linux cgroup feature to isolate container resources
+- Linux namespace to isolate network
+- Socket to communiate between Docker client and server
+
+
+
+Docker Control:
+  Docker Server  <----- [Docker.socket] -----> Docker Client  
+
+/var/run/docker.sock    # the control sock of docker
+
+e.g.
+docker run -ti --rm -v /var/run/docker.sock:/var/run/docker.sock docker sh
+
+
+# docker use software bridge
+docker run -it --rm --net=host ubuntu bash     
+
+# docker use linux iptables
+e.g.
+sudo iptables -n -L -t nat
+
+# so docker -p <port>:<port> is actually setting a iptable port-forward rule
+
+
+# COWS (Copy On Writes)
+
+
