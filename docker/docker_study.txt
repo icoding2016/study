@@ -1,0 +1,444 @@
+Docker image vs container
+Docker images are read-only templates used to build containers. Containers are deployed instances created from those templates
+So static-template vs dynamic instance
+
+
+# docker registries
+docker search <keyword>
+
+docker login 
+
+
+docker pull <image-name>       # repo/imange
+docker push <image-tag>
+
+
+# run a local docker registry in docker
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+# upload a docker image into local registry
+docker tag ubuntu:latest localhost:5000/my-registry/my-ubuntu:1
+docker push ubuntu:latest localhost:5000/my-registry/my-ubuntu:1
+
+
+# Save / Load image locally (into file)
+e.g.
+docker save -o my-images.tar.gz debian:sid busybox ubuntu:14.04
+-o      : output
+
+docker load -i my-images.tar.gz
+-i      : input
+
+
+# remove a docker image from local repo.
+docker rmi <image-name:tag>
+docker rmi <image-id>
+
+
+
+
+# takes container back to image (with update if any)
+docker commit <container-id> <image-tag>
+
+# tag(name) an image
+docker tag <image-id> <tag>
+
+# 
+
+# run container
+docker run -it <image> <cmd>
+-it    i:interactive, t:terminal
+-d     detached
+-e     environment    -e <name>=<value>
+--memory   max-allowed-memory
+--cpu-shares
+--cpu-quote
+e.g. 
+docker run -ti -d ubuntu:latest bash --name <container-tag>
+
+docker run -it --rm -e AUTOTEST_DVCS_DOCKER_IP=$IP -e AUTOTEST_TOOLS_DOCKER_IP=$IP iapi-dvcs-docker-dev-sfo.jfrog-us-west-2.dolby.net/autotest-pytest:latest bash
+
+
+# attach to a detached docker container
+docker attach <container-name>
+# detach from a container
+ctrl^p ctrl^q
+
+
+# attach to a running container with a new process (cmd)
+docker exec -ti <container-tag> <cmd>
+
+# exit docker
+exit 
+or ctrl^d
+
+# 
+docker ps [-l|-a]
+-a   all
+-l   last
+
+
+# docker log
+docker logs <container-tag>
+
+# kill & remove container
+docker kill <contrain-tag>
+docekr rm <container-tag>
+
+
+# networking ##################
+https://docker-k8s-lab.readthedocs.io/en/latest/docker/bridged-network.html
+docker network types:
+- bridge  (--network="bridge")
+  With the network set to bridge a container will use docker’s default networking setup. 
+  A bridge is setup on the host, commonly named docker0, and a pair of veth interfaces will be created for the container
+  An IP address will be allocated for containers on the bridge’s network and traffic will be routed though this bridge to the container.
+  Containers can communicate via their IP addresses by default. To communicate by name, they must be linked
+  
+  default bridge vs user-defined bridge:
+  - user-defined bridge provides auto DNS between containers
+  - user-defined bridge provides attach/detach on the fly
+  - user-defined bridge is a configurable bridge
+  - Linked containers on the default bridge share environment variables.
+  The containers connected to the same network has access to all ports on the each other.
+  
+- host  (--network="host")
+  With the network set to host a container will share the host’s network stack and all interfaces from the host will be available to the container. 
+  The container’s hostname will match the hostname on the host system.
+  Similar to --hostname, the --add-host, --dns, --dns-search, and --dns-option options can be used in host network mode. These options update /etc/hosts or /etc/resolv.conf inside the container. No change are made to /etc/hosts and /etc/resolv.conf on the host.
+  Compared to the default bridge mode, the host mode gives significantly better networking performance since it uses the host’s native networking stack whereas the bridge has to go through one level of virtualization through the docker daemon. It is recommended to run containers in this mode when their networking performance is critical
+- container  ()
+  With the network set to container a container will share the network stack of another container. 
+  The other container’s name must be provided in the format of --network container:<name|id>. 
+  Note that --add-host --hostname --dns --dns-search --dns-option and --mac-address are invalid in container netmode, and --publish --publish-all --expose are also invalid in container netmode.
+- User-defined  
+  a network using a Docker network driver or an external network driver plugin. 
+  You can connect multiple containers to the same network. 
+  Once connected to a user-defined network, the containers can communicate easily using only another container’s IP address or name.
+
+By default, the container is assigned an IP address for every Docker network it connects to. The IP address is assigned from the pool assigned to the network, so the Docker daemon effectively acts as a DHCP server for each container.
+
+When the container starts, it can only be connected to a single network, using --network. In that case you can specify the IP address assigned to the container on that network using the --ip or --ip6 flags, if you don't want its IP to be auto allocated.
+However, you can connect a running container to multiple networks using docker network connect. you can use the --ip or --ip6 flags on that command to specify the container’s IP address on the additional network.
+
+ 
+
+
+a container’s hostname defaults to be the container’s ID in Docker. You can override the hostname using --hostname
+
+
+docker network create
+docker network rm
+docker network connect
+docker network disconnect
+docker network ls
+docker network inspect <bridge-id or name>
+
+e.g.
+docker network create --driver=bridge --subnet=10.20.30.0/24 test
+
+
+yxxie@commqa_des09:~$ docker network create --driver=bridge --subnet=10.20.30.0/24 test
+d980c7fa7d47238f070f7a8df887c28b4552f8d559625d01765cf748800bc489
+yxxie@commqa_des09:~$ docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+b9ba85eda28b   bridge    bridge    local
+c2f0f58f32b9   host      host      local
+ccdeddd69ab0   none      null      local
+d980c7fa7d47   test      bridge    local
+yxxie@commqa_des09:~$ docker run --name TOOLS -t -d --rm --network="test" -p 5060:5060 -p 6080-6081:6080-6081 -p 8484:8484 -p 9494:9494 -p 9595:9595 -e AUTOTEST_DVCS_DOCKER_IP=$AUTOTEST_DVCS_DOCKER_IP  autotest-tools:latest
+yxxie@commqa_des09:~$ docker network inspect test
+[
+    {
+        "Name": "test",
+        "Id": "d980c7fa7d47238f070f7a8df887c28b4552f8d559625d01765cf748800bc489",
+        "Created": "2022-04-28T15:09:58.704961169+10:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "10.20.30.0/24"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "50ec19abf51f4dd9af98f7e650b760ccb2f1d54b045453b91e67f2de36991b6b": {
+                "Name": "TOOLS",
+                "EndpointID": "f08aa750711b88a9b5316a184ade7375ccd61df58b21823864a93e9b3dbb0053",
+                "MacAddress": "02:42:0a:14:1e:02",
+                "IPv4Address": "10.20.30.2/24",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {}
+    }
+]
+
+
+# how to get docker IP?
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container name or id>
+e.g.
+yxxie@commqa_des09:~/tmp$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' TOOLS
+10.20.30.2
+
+
+
+
+# port
+docker run -p <port-internal>:<port-external> <image> <cmd>       # publish port (default TCP)
+docker run -p <port-internal>/udp:<port-external> <image> <cmd> 
+-p    publish
+e.g.
+  docker run -it -p 45678:r5678 -p 45679:45679 --name echo-server ubuntu:latest bash
+  nc -lp 45678 | nc -lp 55679
+  
+# or let docker choose the external port
+docker run -p <port-internal> <image> <cmd>
+docker port <container-tag>
+
+
+# connecting directly b/t containers
+docker network create <network-tag>
+
+docker run -ti --net <network-tag> --name <container-tag> <image> <cmd>
+e.g. 
+  docker run -ti --net learning --name cat-server ubuntu  bash
+  docker run -ti --net learning --name dog-server ubuntu  bash
+
+  from container dog-server, can ping cat-server
+
+
+docker network create cat-only
+docker network connect cat-only cat-server
+
+
+# containers volumes  '-v'
+# - persistent
+# - ephemeral
+docker run -it -v <local-path>:<container-path> <image> <cmd>
+e.g.
+  docker run -it -v ./code:/home/root/code ubuntu bash
+  
+
+docker inspect 
+
+
+
+######################
+# Dockerfile
+docker build -t <image-tag> <path-to-dockerfile>
+
+the 'path-to-dockerfile' could be a 
+  - dir (the cmd looks for Dockerfile in the path)
+    e.g.  
+	docker build .
+	
+  - a file,  need to be specified with  -f or --file
+    e.g.
+	docker build -f ctx/Dockerfile .
+	docker build - < Dockerfile          # read Dockerfile from STDIN
+	
+  - a url,  e.g.
+    docker build https://github.com/docker/rootfs.git#container:docker     -- the docker folder in github
+	docker build github.com/creack/docker-firefox
+	
+  - a tar
+	docker build http://server/context.tar.gz               (the tarball contains the build context)
+
+
+
+
+# "Each line of a Docker file makes a new, independent image based on the previous line's image"
+# "Each line in dockerfile has its own 'docker run' and 'docker commit'", 
+# so the env or process in one line does not live to the next line.  
+# each step (line)'s output of buiding the docker image is cached
+# processes starts on one line will nt be running on the next line. Environment variables you set will not be set on the next line.
+# 
+# avoid have large-file span lines of the dockerfile. otherwise the docker image will be huge.
+
+
+
+ENTRYPOINT or/and CMD
+Ultimately, both ENTRYPOINT and CMD give you a way to identify which executable should be run when a container is started from your image. 
+In fact, if you want your image to be runnable (without additional docker run command line arguments) you must specify an ENTRYPOINT or CMD.
+
+The CMD instruction has three forms:
+  CMD ["executable","param1","param2"] (exec form, this is the preferred form)
+  CMD ["param1","param2"] (as default parameters to ENTRYPOINT)
+  CMD command param1 param2 (shell form)
+There can only be one CMD instruction in a Dockerfile. If you list more than one CMD then only the last CMD will take effect.
+
+CMD can be overriden by the command-line docker run arguments.
+CMD commands are ignored by Daemon when there are parameters stated within the docker run command.
+ENTRYPOINT instructions are not ignored but indead are appended as command line parameters by treating those as arguements of the command. 
+
+The `ENTRYPOINT` statement is for making your containers look like normal programs.
+
+
+To unleash the power of combination of ENTRYPOINT and CMD.
+Put the beginning part of your command line, which is not expected to change, into ENTRYPOINT and the tail, which should be configurable, into CMD. Then you can simple append necessary arguments to your docker run command.
+e.g
+[Dockerfile echo-test]
+...
+ENTRYPOINT ["echo", "fixed-args1", "fixed-arg2"]
+CMD ["optional-arg3-default"]
+[sh script]
+docker run echo-test "override-arg3"
+
+
+entrypoint can be overriden in commnad line:
+e.g.
+sudo docker run -it --entrypoint bash [docker_image]
+
+
+
+
+The Docker file WORKDIR command changes directories both for the rest of the Docker file, and in the finished image
+
+
+# Orchestration:
+# single-computer orchestration -- docker compose
+To use docker compose:
+  Dockerfile
+  docker-compose.yml
+  docker compose up
+  docker-compose --env-file ./config/.env.dev up
+
+e.g.
+ docker-compose up -d
+ ./run_tests
+ docker-compose down
+
+
+#==========
+
+Docker interal 
+- Linux cgroup feature to isolate container resources
+- Linux namespace to isolate network
+- Socket to communiate between Docker client and server
+
+
+
+Docker Control:
+  Docker Server  <----- [Docker.socket] -----> Docker Client  
+
+/var/run/docker.sock    # the control sock of docker
+
+e.g.
+docker run -ti --rm -v /var/run/docker.sock:/var/run/docker.sock docker sh
+
+
+# docker use software bridge
+docker run -it --rm --net=host ubuntu bash     
+
+# docker use linux iptables
+e.g.
+sudo iptables -n -L -t nat
+
+# so docker -p <port>:<port> is actually setting a iptable port-forward rule
+
+
+# COWS (Copy On Writes)
+
+
+# Expose/publish port
+3 options:
+- Neither specify EXPOSE nor -p
+- Only specify EXPOSE
+- Specify EXPOSE and -p
+1) If you specify neither EXPOSE nor -p, the service in the container will only be accessible from inside the container itself.
+2) If you EXPOSE a port, the service in the container is not accessible from outside Docker, but from inside other Docker containers. So this is good for inter-container communication.
+3) If you EXPOSE and -p a port, the service in the container is accessible from anywhere, even outside Docker.
+The reason why both are separated: 
+The reason why both are separated: 
+choosing a host port depends on the host and hence does not belong to the Dockerfile (otherwise it would be depending on the host),
+and often it's enough if a service in a container is accessible from other containers.
+
+The EXPOSE instruction does not actually publish the port. 
+It functions as a type of documentation between the person who builds the image and the person who runs the container, about which ports are intended to be published. 
+To actually publish the port when running the container, use the -p flag on docker run to publish and map one or more ports, or the -P flag to publish all exposed ports and map them to high-order ports.
+
+Using the -P (upper case) flag at runtime lets you publish all exposed ports to random ports on the host interfaces. It’s short for –publish-all.
+Using the -p (lower case) flag at runtime lets you publish a container’s specific port(s) to the Docker host. It’s short for –publish.
+
+# dockerd (docker daemon)
+yxxie@commqa_des09:~/tmp$ ps aux | grep dockerd
+root        1155  0.0  0.3 2089116 57732 ?       Ssl  Jan25 108:44 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+root       21933  2.2  0.3 2122268 62284 ?       Ssl  Mar23 662:50 /usr/bin/dockerd -H tcp://0.0.0.0:2376 -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert /etc/docker/ca.pem --tlscert /etc/docker/server.pem --tlskey /etc/docker/server-key.pem --label provider=docker --insecure-registry 10.96.0.0/12
+
+
+# to enable docker debug
+#enable debug in the config
+/etc/docker/daemon.json
+  {
+    "debug": true
+  }
+sudo kill -SIGHUP $(pidof dockerd)     # restart the docker process and reload config
+docker info    # and check debug mode
+
+
+
+# check log
+output run time log with "-a stdout -a stderr"
+e.g. 
+docker run --name DVCS --rm -t  -a stdout -a stderr --network="host" -p 5080:5080/tcp -p 5080:5080/udp -p 8081:8081 -p 8089:8089 autotest-dvcs-docker:latest
+
+# docker cp
+docker cp [OPTIONS] CONTAINER:SRC_PATH DEST_PATH
+
+
+
+
+
+#### dind ####
+
+
+
+docker run --name dind -td --rm --privileged --network test --ip 10.20.30.111 -v dind_share:/dind_share docker:dind
+run --name dind -td --rm --privileged --network test --ip 10.20.30.111 -v /certs/client:/certs/client -v dind_share:/dind_share docker:dind
+
+
+
+
+
+
+
+
+
+###############################################3
+
+The docker context is the directory the Dockerfile is located in. 
+If you want to build an image that is one of the restrictions you have to face.
+
+So if the Dockerfile is ~/docker/Dockerfile, then it will fail if we write the Dockerfile 
+"RUN mkdir -p /code
+COPY /home/yxxie/code/example /code/"
+
+COPY failed: file not found in build context or excluded by .dockerignore: stat home/yxxie/code/example: file does not exist
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
