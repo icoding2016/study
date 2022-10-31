@@ -1,0 +1,222 @@
+
+
+Gitlab CI Architecture
+
+
+
+
+                                     After creating the machine, Runner uses received IP:PORT to schedule containers and execute jobs scripts there.
+  Helpers (For monitoring / cache)
+  Runner-Manager: - (create) ->      VM(s) -- Host(s) to run jobs
+ 
+  ========================= GCE ==========================
+  
+  
+  - X-runners-manager (hosts with the GitLab Runner process): 
+    (Create hosts and execute jobs)
+    These hosts handle job’s execution and autoscaled machines scheduling. 
+    Runner managers connect to the GitLab.com and dev.gitlab.org API in order to fetch jobs that need to be run. The autoscaled machines clone the relevant project via HTTPS.
+	
+  - Hosts 
+    Hosts are created and managed by the GitLab Runner. They are used to run a job’s scripts inside of Docker containers. 
+  
+  - Runner (on host)
+    Runner starts jobs on autoscaled machines using the Docker Engine API.
+	
+	After creating the machine, Runner uses received IP:PORT to schedule containers and execute jobs scripts there.
+	
+	
+	
+	
+  
+
+
+ref:
+  http://repositories.compbio.cs.cmu.edu/help/ci/docker/using_docker_images.md
+  https://about.gitlab.com/handbook/engineering/infrastructure/production/architecture/ci-architecture.html
+  
+  
+Dolby's gitlab setup
+  [11:23 AM] Victoria, Marvin
+  I only have a short description here: https://confluence.dolby.net/kb/display/BLDRLS/How+to+request+for+Autoscaling+Gitlab+Runners
+BIG-IP logout page
+
+[11:24 AM] Victoria, Marvin
+The implementation is based on docker-machine, but this tool has been deprecated so I don't know if you can find the docs for that anymore. Gitlab is working on another solution, but at this time we are stuck with docker-machine
+ like 1
+
+
+  
+
+==========================
+Variables
+
+Predefined CI/CD Variables
+-------------------------------
+- Variables in the .gitlab-ci.yml file.
+  defined in .gitlab-ci.yml,  
+  variables:
+    var_name: <value>
+  If the variable is at the top level, it’s globally available and all jobs can use it.
+  If you don’t want globally defined variables to be available in a job, set variables to {}:
+  If you do not want the $ character interpreted as the start of a variable, use $$ instead:
+  
+  Variables can be defined within your .gitlab-ci.yml file using a variables block. Variables listed here will be created for the job if they don’t already exist; otherwise, they’ll override the value set at the project-level or higher.
+  
+- Project CI/CD variables.
+  
+  Only project members with the Maintainer role can add or update project CI/CD variables
+  https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+  e.g.
+    CI_BUILDS_DIR
+	CI_COMMIT_BRANCH
+	CI_COMMIT_TAG
+	CI_PROJECT_DIR
+	CI_JOB_ID
+	CI_PIPELINE_ID
+	
+	
+- Group CI/CD variables.
+- Instance CI/CD variables.
+
+
+
+Passing/Inherit environment variables from other jobs 
+------------------------------------------------------
+
+By using the dependencies keyword (or needs keyword for DAG pipelines), a job can inherit variables from other jobs if they are sourced with dotenv report artifacts.
+You can inherit environment variables from dependent jobs. This feature makes use of the artifacts:reports:dotenv report feature.
+
+In the job script, save the variable as a .env file. Save the .env file as an artifacts:reports:dotenv artifact. 
+Set a job in a later stage to receive the artifact by using the dependencies or the needs keywords. 
+The later job can then use the variable in scripts. For example, with the dependencies keyword:
+	The variable key can contain only letters, digits, and underscores (_).
+	The maximum size of the .env file is 5 KB. This limit can be changed on self-managed instances.
+	On GitLab.com, the maximum number of inherited variables is 50 for Free, 100 for Premium and 150 for Ultimate. The default for self-managed instances is 150, and can be changed by changing the dotenv_variables application limit.
+	Variable substitution in the .env file is not supported.
+	The .env file can’t have empty lines or comments (starting with #).
+	Key values in the env file cannot have spaces or newline characters (\n), including when using single or double quotes.
+	Quote escaping during parsing (key = 'value' -> {key: "value"}) is not supported.
+	artifacts:reports:junit
+
+
+e.g. https://stackoverflow.com/questions/67707362/dynamically-save-gitlab-variable-for-job-that-runs-only-for-one-pipeline
+
+build:
+  stage: build
+  script:
+    - echo "BUILD_VERSION=hello" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+
+deploy:
+  stage: deploy
+  script:
+    - echo "$BUILD_VERSION"  # Output is: 'hello'
+  dependencies:
+    - build
+
+For example, with the needs keyword:
+
+build:
+  stage: build
+  script:
+    - echo "BUILD_VERSION=hello" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+
+deploy:
+  stage: deploy
+  script:
+    - echo "$BUILD_VERSION"  # Output is: 'hello'
+  needs:
+    - job: build
+      artifacts: true
+	  
+	  
+================================================================
+[Setup runners]
+
+Windows Runner:
+- download & install runner on Windows machine.
+  https://docs.gitlab.com/runner/install/windows.html
+  e.g.
+	cd C:\GitLab-Runner
+	.\gitlab-runner.exe install
+	or 
+	gitlab-runner-windows-amd64.exe install --user desktop-1ord23v\axon --password Axxon99zz
+	.\gitlab-runner.exe start
+	
+	for IT managed
+	gitlab-runner-windows-amd64.exe install --user commbuildwin05\axon --password Axxon99zz
+
+  
+  change setting if required.
+  e.g.
+    [config.toml]
+	  concurrent = 5
+	
+- register the runner
+  e.g
+  gitlab-runner-windows-amd64.exe register
+  C:\gitlab>gitlab-runner-windows-amd64.exe register
+	Runtime platform                                    arch=amd64 os=windows pid=2824 revision=76984217 version=15.1.0
+	Enter the GitLab instance URL (for example, https://gitlab.com/):
+	https://gitlab-sfo.dolby.net/
+	Enter the registration token:
+	GR1348941VzjF-9p2JbJUkjurXP1E
+	Enter a description for the runner:
+	[DESKTOP-1ORD23V]: gitlab runner comms-build-win-05
+	Enter tags for the runner (comma-separated):
+	DVCS_GitLab_Runners_Win, Windows_Runners
+	Enter optional maintenance note for the runner:
+	host:comms-build-win-05.apac-eng.dolby.net, user:axon
+	Registering runner... succeeded                     runner=GR1348941VzjF-9p2
+	Enter an executor: custom, docker, docker-ssh, docker+machine, kubernetes, docker-ssh+machine, docker-windows, parallels, shell, ssh, virtualbox:
+	shell
+	Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+
+  The config.toml
+	concurrent = 5
+	check_interval = 0
+
+	[session_server]
+	  session_timeout = 1800
+
+	[[runners]]
+	  name = "gitlab runner comms-build-win-05"
+	  url = "https://gitlab-sfo.dolby.net/"
+	  token = "nuMhkFr9oUUZs_6zwqav"
+	  executor = "shell"
+	  shell = "powershell"                        # for win-desktop, shell="powershell", for win-core, shell="pwsh"
+	  [runners.custom_build_dir]
+	  [runners.cache]
+		[runners.cache.s3]
+		[runners.cache.gcs]
+		[runners.cache.azure]
+
+
+- start the runner:  
+  gitlab>gitlab-runner-windows-amd64.exe start
+  
+  # possible issue:
+  C:\gitlab>gitlab-runner-windows-amd64.exe start
+	Runtime platform                                    arch=amd64 os=windows pid=8636 revision=76984217 version=15.1.0
+	FATAL: Failed to start gitlab-runner: The service did not start due to a logon failure.
+  This is what fixed it for me hope it helps:
+	1.Open services.msc
+	2.Find GitLab Runner.
+	3.Go to properties.
+	4.Switch to local system account.
+
+
+
+[mount_syd-file-3.bat]
+umount w:
+mount -o nolock -o anon \\syd-file-03\data w:  
+	  
+
+
+	  
