@@ -1,0 +1,272 @@
+Docker image vs container
+Docker images are read-only templates used to build containers. Containers are deployed instances created from those templates
+So static-template vs dynamic instance
+
+
+# docker registries
+docker search <keyword>
+
+docker login 
+
+
+docker pull <image-name>       # repo/imange
+docker push <image-tag>
+
+
+# run a local docker registry in docker
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+# upload a docker image into local registry
+docker tag ubuntu:latest localhost:5000/my-registry/my-ubuntu:1
+docker push ubuntu:latest localhost:5000/my-registry/my-ubuntu:1
+
+
+# Save / Load image locally (into file)
+e.g.
+docker save -o my-images.tar.gz debian:sid busybox ubuntu:14.04
+-o      : output
+
+docker load -i my-images.tar.gz
+-i      : input
+
+
+# remove a docker image from local repo.
+docker rmi <image-name:tag>
+docker rmi <image-id>
+
+
+
+
+# takes container back to image (with update if any)
+docker commit <container-id> <image-tag>
+
+# tag(name) an image
+docker tag <image-id> <tag>
+
+# 
+
+# run container
+docker run -it <image> <cmd>
+-it    i:interactive, t:terminal
+-d     detached
+-e     environment    -e <name>=<value>
+--memory   max-allowed-memory
+--cpu-shares
+--cpu-quote
+e.g. 
+docker run -ti -d ubuntu:latest bash --name <container-tag>
+
+docker run -it --rm -e AUTOTEST_DVCS_DOCKER_IP=$IP -e AUTOTEST_TOOLS_DOCKER_IP=$IP iapi-dvcs-docker-dev-sfo.jfrog-us-west-2.dolby.net/autotest-pytest:latest bash
+
+
+# attach to a detached docker container
+docker attach <container-name>
+# detach from a container
+ctrl^p ctrl^q
+
+
+# attach to a running container with a new process (cmd)
+docker exec -ti <container-tag> <cmd>
+
+# exit docker
+exit 
+or ctrl^d
+
+# 
+docker ps [-l|-a]
+-a   all
+-l   last
+
+
+# docker log
+docker logs <container-tag>
+
+# kill & remove container
+docker kill <contrain-tag>
+docekr rm <container-tag>
+
+
+# port and networking
+
+docker network ls
+
+
+docker run -p <port-internal>:<port-external> <image> <cmd>       # publish port (default TCP)
+docker run -p <port-internal>/udp:<port-external> <image> <cmd> 
+-p    publish
+e.g.
+  docker run -it -p 45678:r5678 -p 45679:45679 --name echo-server ubuntu:latest bash
+  nc -lp 45678 | nc -lp 55679
+  
+# or let docker choose the external port
+docker run -p <port-internal> <image> <cmd>
+docker port <container-tag>
+
+
+# connecting directly b/t containers
+docker network create <network-tag>
+
+docker run -ti --net <network-tag> --name <container-tag> <image> <cmd>
+e.g. 
+  docker run -ti --net learning --name cat-server ubuntu  bash
+  docker run -ti --net learning --name dog-server ubuntu  bash
+
+  from container dog-server, can ping cat-server
+
+
+docker network create cat-only
+docker network connect cat-only cat-server
+
+
+# containers volumes  '-v'
+# - persistent
+# - ephemeral
+docker run -it -v <local-path>:<container-path> <image> <cmd>
+e.g.
+  docker run -it -v ./code:/home/root/code ubuntu bash
+  
+
+docker inspect 
+
+
+
+######################
+# Dockerfile
+docker build -t <image-tag> <path-to-dockerfile>
+
+the 'path-to-dockerfile' could be a 
+  - dir (the cmd looks for Dockerfile in the path)
+    e.g.  
+	docker build .
+	
+  - a file,  need to be specified with  -f or --file
+    e.g.
+	docker build -f ctx/Dockerfile .
+	docker build - < Dockerfile          # read Dockerfile from STDIN
+	
+  - a url,  e.g.
+    docker build https://github.com/docker/rootfs.git#container:docker     -- the docker folder in github
+	docker build github.com/creack/docker-firefox
+	
+  - a tar
+	docker build http://server/context.tar.gz               (the tarball contains the build context)
+
+
+
+
+# "Each line of a Docker file makes a new, independent image based on the previous line's image"
+# "Each line in dockerfile has its own 'docker run' and 'docker commit'", 
+# so the env or process in one line does not live to the next line.  
+# each step (line)'s output of buiding the docker image is cached
+# processes starts on one line will nt be running on the next line. Environment variables you set will not be set on the next line.
+# 
+# avoid have large-file span lines of the dockerfile. otherwise the docker image will be huge.
+
+
+
+ENTRYPOINT or CMD
+Ultimately, both ENTRYPOINT and CMD give you a way to identify which executable should be run when a container is started from your image. 
+In fact, if you want your image to be runnable (without additional docker run command line arguments) you must specify an ENTRYPOINT or CMD.
+
+The CMD instruction has three forms:
+  CMD ["executable","param1","param2"] (exec form, this is the preferred form)
+  CMD ["param1","param2"] (as default parameters to ENTRYPOINT)
+  CMD command param1 param2 (shell form)
+There can only be one CMD instruction in a Dockerfile. If you list more than one CMD then only the last CMD will take effect.
+
+CMD can be overriden by the command-line docker run arguments.
+
+CMD commands are ignored by Daemon when there are parameters stated within the docker run command.
+ENTRYPOINT instructions are not ignored but indead are appended as command line parameters by treating those as arguements of the command. 
+
+The `ENTRYPOINT` statement is for making your containers look like normal programs.
+
+
+The Docker file WORKDIR command changes directories both for the rest of the Docker file, and in the finished image
+
+
+# Orchestration:
+# single-computer orchestration -- docker compose
+To use docker compose:
+  Dockerfile
+  docker-compose.yml
+  docker compose up
+
+e.g.
+ docker-compose up -d
+ ./run_tests
+ docker-compose down
+
+
+#==========
+
+Docker interal 
+- Linux cgroup feature to isolate container resources
+- Linux namespace to isolate network
+- Socket to communiate between Docker client and server
+
+
+
+Docker Control:
+  Docker Server  <----- [Docker.socket] -----> Docker Client  
+
+/var/run/docker.sock    # the control sock of docker
+
+e.g.
+docker run -ti --rm -v /var/run/docker.sock:/var/run/docker.sock docker sh
+
+
+# docker use software bridge
+docker run -it --rm --net=host ubuntu bash     
+
+# docker use linux iptables
+e.g.
+sudo iptables -n -L -t nat
+
+# so docker -p <port>:<port> is actually setting a iptable port-forward rule
+
+
+# COWS (Copy On Writes)
+
+
+# Expose/publish port
+3 options:
+- Neither specify EXPOSE nor -p
+- Only specify EXPOSE
+- Specify EXPOSE and -p
+1) If you specify neither EXPOSE nor -p, the service in the container will only be accessible from inside the container itself.
+2) If you EXPOSE a port, the service in the container is not accessible from outside Docker, but from inside other Docker containers. So this is good for inter-container communication.
+3) If you EXPOSE and -p a port, the service in the container is accessible from anywhere, even outside Docker.
+The reason why both are separated: 
+The reason why both are separated: 
+choosing a host port depends on the host and hence does not belong to the Dockerfile (otherwise it would be depending on the host),
+and often it's enough if a service in a container is accessible from other containers.
+
+
+# dockerd (docker daemon)
+yxxie@commqa_des09:~/tmp$ ps aux | grep dockerd
+root        1155  0.0  0.3 2089116 57732 ?       Ssl  Jan25 108:44 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+root       21933  2.2  0.3 2122268 62284 ?       Ssl  Mar23 662:50 /usr/bin/dockerd -H tcp://0.0.0.0:2376 -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert /etc/docker/ca.pem --tlscert /etc/docker/server.pem --tlskey /etc/docker/server-key.pem --label provider=docker --insecure-registry 10.96.0.0/12
+
+
+# to enable docker debug
+#enable debug in the config
+/etc/docker/daemon.json
+  {
+    "debug": true
+  }
+sudo kill -SIGHUP $(pidof dockerd)     # restart the docker process and reload config
+docker info    # and check debug mode
+
+
+
+###############################################3
+
+The docker context is the directory the Dockerfile is located in. 
+If you want to build an image that is one of the restrictions you have to face.
+
+So if the Dockerfile is ~/docker/Dockerfile, then it will fail if we write the Dockerfile 
+"RUN mkdir -p /code
+COPY /home/yxxie/code/example /code/"
+
+COPY failed: file not found in build context or excluded by .dockerignore: stat home/yxxie/code/example: file does not exist
