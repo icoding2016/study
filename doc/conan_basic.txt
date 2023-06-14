@@ -1,0 +1,32 @@
+
+# conan remote list
+c:\gitlab\builds\nuMhkFr9\0\comms-cs\dvcs>conan remote list
+dvsc: https://jfrog-apac.dolby.net/artifactory/api/conan/iapi-dvcs-conan-dev-fed [Verify SSL: True]
+conan-center: https://center.conan.io [Verify SSL: True]
+
+c:\gitlab\builds\nuMhkFr9\0\comms-cs\dvcs>conan remote list
+dvsc: https://jfrog-sfo.dolby.net/artifactory/api/conan/iapi-dvcs-conan-dev-fed [Verify SSL: True]
+conan-center: https://center.conan.io [Verify SSL: True]
+
+# conan user
+C:\Users\axon>conan user sa-local-iapi-dvcs -p AKCp8jRGKnwu4QHsc48NEhe9VA8D8zz7k3E1zYYGEP3B1W7Nt29JZGVizvMJAqrQT3MzLAWMv -r dvsc
+
+After a successful login the auth token is stored in the local database (see CONAN_LOGIN_ENCRYPTION_KEY to add a basic level of security)
+
+# conan search
+conan search echo_simulator -r dvsc
+conan search sdsp -r dvsc
+
+c:\gitlab\builds\nuMhkFr9\0\comms-cs\dvcs>conan search sdsp -r dvsc
+There are no packages matching the 'sdsp' pattern
+
+c:\gitlab\builds\nuMhkFr9\0\comms-cs\dvcs>conan search echo_simulator -r dvsc
+There are no packages matching the 'echo_simulator' pattern
+
+
+# conan remove 
+conan remove "*" -s -b -f
+
+
+# Clear conan lock
+conan remove --locks

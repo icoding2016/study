@@ -1,0 +1,114 @@
+c:\code\icoding\study\PY\test>pytest test_marker.py -sv
+================================================= test session starts =================================================
+platform win32 -- Python 3.10.1, pytest-7.1.2, pluggy-1.0.0 -- C:\Python\Python310\python.exe
+cachedir: .pytest_cache
+rootdir: c:\code\icoding\study\PY\test
+plugins: devpi-server-6.5.1
+collected 5 items
+
+test_marker.py::test_1 run test 1
+PASSED
+test_marker.py::test_2[a11-a21] test 2 with args: a11 a21
+PASSED
+test_marker.py::test_2[a12-a22] test 2 with args: a12 a22
+FAILED
+test_marker.py::test_3[a11-a21] test 3 with args: a11 a21
+PASSED
+test_marker.py::test_3[a12-a22] test 3 with args: a12 a22
+PASSED
+
+====================================================== FAILURES =======================================================
+___________________________________________________ test_2[a12-a22] ___________________________________________________
+
+a1 = 'a12', a2 = 'a22'
+
+    @pytest.mark.parametrize('a1, a2', [('a11', 'a21'), ('a12', 'a22')])
+    def test_2(a1, a2):
+        print(f"test 2 with args: {a1} {a2}")
+        failure_cases = [
+            ('a12', 'a22')
+        ]
+        if (a1, a2) in failure_cases:
+>           assert False
+E           assert False
+
+test_marker.py:15: AssertionError
+================================================== warnings summary ===================================================
+test_marker.py:18
+  c:\code\icoding\study\PY\test\test_marker.py:18: PytestUnknownMarkWarning: Unknown pytest.mark.optional - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.optional
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================================== short test summary info ===============================================
+FAILED test_marker.py::test_2[a12-a22] - assert False
+======================================= 1 failed, 4 passed, 1 warning in 2.42s ========================================
+
+c:\code\icoding\study\PY\test>pytest test_marker.py -m "not optional" -sv
+================================================= test session starts =================================================
+platform win32 -- Python 3.10.1, pytest-7.1.2, pluggy-1.0.0 -- C:\Python\Python310\python.exe
+cachedir: .pytest_cache
+rootdir: c:\code\icoding\study\PY\test
+plugins: devpi-server-6.5.1
+collected 5 items / 2 deselected / 3 selected
+
+test_marker.py::test_1 run test 1
+PASSED
+test_marker.py::test_2[a11-a21] test 2 with args: a11 a21
+PASSED
+test_marker.py::test_2[a12-a22] test 2 with args: a12 a22
+FAILED
+
+====================================================== FAILURES =======================================================
+___________________________________________________ test_2[a12-a22] ___________________________________________________
+
+a1 = 'a12', a2 = 'a22'
+
+    @pytest.mark.parametrize('a1, a2', [('a11', 'a21'), ('a12', 'a22')])
+    def test_2(a1, a2):
+        print(f"test 2 with args: {a1} {a2}")
+        failure_cases = [
+            ('a12', 'a22')
+        ]
+        if (a1, a2) in failure_cases:
+>           assert False
+E           assert False
+
+test_marker.py:15: AssertionError
+================================================== warnings summary ===================================================
+test_marker.py:18
+  c:\code\icoding\study\PY\test\test_marker.py:18: PytestUnknownMarkWarning: Unknown pytest.mark.optional - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.optional
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================================== short test summary info ===============================================
+FAILED test_marker.py::test_2[a12-a22] - assert False
+================================ 1 failed, 2 passed, 2 deselected, 1 warning in 0.10s =================================
+
+c:\code\icoding\study\PY\test>pytest test_marker.py -m "not skip_1" -sv
+================================================= test session starts =================================================
+platform win32 -- Python 3.10.1, pytest-7.1.2, pluggy-1.0.0 -- C:\Python\Python310\python.exe
+cachedir: .pytest_cache
+rootdir: c:\code\icoding\study\PY\test
+plugins: devpi-server-6.5.1
+collected 5 items / 2 deselected / 3 selected
+
+test_marker.py::test_1 run test 1
+PASSED
+test_marker.py::test_3[a11-a21] test 3 with args: a11 a21
+PASSED
+test_marker.py::test_3[a12-a22] test 3 with args: a12 a22
+PASSED
+
+================================================== warnings summary ===================================================
+test_marker.py:8
+  c:\code\icoding\study\PY\test\test_marker.py:8: PytestUnknownMarkWarning: Unknown pytest.mark.skip_1 - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.skip_1
+
+test_marker.py:19
+  c:\code\icoding\study\PY\test\test_marker.py:19: PytestUnknownMarkWarning: Unknown pytest.mark.optional - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.optional
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================================== 3 passed, 2 deselected, 2 warnings in 0.03s =====================================
+
+c:\code\icoding\study\PY\test>
