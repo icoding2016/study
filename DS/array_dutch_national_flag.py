@@ -74,6 +74,24 @@ def dutch_national_flag(a: list) -> list:
     return a
 
 
+# This is the standard algorithm, which is clearer
+def dutch_national_flag_standard(a: list) -> list:
+    low = mid = 0
+    high = len(a) - 1
+    while mid <= high:
+        if a[mid] == 0:
+            a[low], a[mid] = a[mid], a[low]     # swap mid/low
+            low += 1
+            mid += 1
+        elif a[mid] == 2:
+            a[high], a[mid] = a[mid], a[high]     # swap mid/low
+            high -= 1
+        else:
+            mid += 1
+    return a
+
+
+
 def test():
     a = A
     print(f"Input array: {a}")
@@ -83,5 +101,7 @@ def test():
     print(f"sort_012_array_bucket result: {result}")
     result = dutch_national_flag(a)
     print(f"dutch_national_flag result: {result}")
+    result = dutch_national_flag_standard(a)
+    print(f"dutch_national_flag_classic result: {result}")
 
 test()
