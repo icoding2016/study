@@ -85,7 +85,7 @@ SELECT * from logins;
 # COUNT
 SELECT distinct id, login_date, count(login_date) over (partition by id order by id) as count from logins;
 # LAG
-SELECT distinct id, login_date, LAG(login_date, 1) OVER (partition by id order by id) as last_login FROM logins;
+SELECT distinct id, login_date, LAG(login_date, 1) OVER (partition by id order by login_date) as last_login FROM logins;
 
 
 SELECT distinct id, login_date, LAG(login_date, 4) OVER (partition by id order by id) as lag_4 FROM logins;
@@ -94,12 +94,12 @@ SELECT distinct id, login_date, LAG(login_date, 4) OVER (partition by id order b
 WITH 
 Lag4 AS (
   SELECT distinct id, login_date,
-    LAG(login_date, 4) OVER (partition by id order by id) as lag_4 
+    LAG(login_date, 4) OVER (partition by id order by login_date) as lag_4 
   FROM logins
 ),
 ActiveUsers AS (
   SELECT id, login_date, lag_4 FROM Lag4
-  WHERE login_date - lag_4 >= 4
+  WHERE datediff(login_date, lag_4) = 4
 )
 SELECT distinct au.id, acc.name 
 FROM ActiveUsers as au 
