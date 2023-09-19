@@ -1,0 +1,47 @@
+services:
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_DATABASE=test
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+    volumes:
+      # seeding scripts
+      - ./mongo-entrypoint:/docker-entrypoint-initdb.d
+      # named volumes
+      - mongodb:/data/db
+      - mongoconfig:/data/configdb
+    networks:
+      - mongo_net
+
+  mongoexpress:
+    image: mongo-express:latest
+    container_name: mongoexpress
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      # to access mongo-express UI, we need 'ADMINUSER' instead of 'BASEICAUTH' user/pass
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=admin
+      # - ME_CONFIG_BASICAUTH_USERNAME=admin
+      # - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    networks:
+      - mongo_net
+    depends_on:
+      - mongodb
+    restart: on-failure    # unless-stopped
+    
+volumes:
+  # default dir on Ubuntu: /var/lib/docker/volumes
+  mongodb:
+  mongoconfig:
+
+networks:
+  mongo_net:
+    driver: bridge
+    
