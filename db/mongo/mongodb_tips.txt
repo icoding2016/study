@@ -1,0 +1,19 @@
+MongoDB setup
+
+# Install server & client
+
+
+# How to enable remote access to MongoDB?
+## Config/bind IPs (multiple or all)?
+in mongod.cfg:
+	net:
+	  port: 27017
+	  bindIp: 127.0.0.1,10.0.1.105
+or use '0.0.0.0' for all IPs on the server host.
+
+## Enable port 27017
+Config firewall (Windows Firewall Inbond, or UFW on Linux)
+Add Inbond rule (enable TCP 27017)
+
+
+
