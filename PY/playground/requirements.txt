@@ -1,0 +1,14 @@
+
+numpy
+pandas
+matplotlib
+
+pymysql
+psycopg2
+
+requests
+bs4
+tk
+
+python-dotenv
+pytest
