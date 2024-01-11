@@ -1,0 +1,230 @@
+"""
+##########################
+
+## Concurrent vs Parallelism
+- Concurrent: Code that can be executed out of order.
+- Parallel: Capability to execute code simultaneously.
+
+
+## Threads vs Processes
+
+Pros of process:
+Both threads and processes can execute concurrently (out of order),
+but only python processes are able to execute in parallel (simultaneously), not Python threads (with some caveats).
+This means that if we want out Python code to run on all CPU cores and make the best use of our system hardware, we should use process-based concurrency.
+(note, not all Python interpreters implement GIL, so some can support full parallelism with thread)
+
+Pros of thread
+- We may have thousands of threads, but perhaps only tens of processes.
+  e.g. you may only be able to create 61 processes on Windows.
+- Threads are small and fast, whereas processes are large and slow to create and start.
+- Threads can share data quickly and directly, whereas processes must pickle and transmit data to each other.
+
+
+I/O-bound tasks
+CPU-bound tasks
+  CPU-bound tasks are those computational tasks that will run as fast as the CPU will allow.
+  They do not interact with any device, file or socket like IO-bound tasks
+
+## GIL
+
+GIL limit the multi-threading from achieving full parallelism.
+with some caveats:
+- Interpreter with GIL.
+  GIL applies to the Python reference interpreter called CPython,
+  e.g. the version of Python you download from python.org is CPython.
+- CPU-bound tasks.
+  It applies to CPU-bound tasks, e.g. tasks that run as fast as your CPU cores will allow.
+  The GIL is released when a thread is performing an IO-task,
+  such as: interacting with a file, a socket or an external device.
+  So, we can achieve true parallelism with thread-based concurrency when performing IO-bound tasks.
+- one GIL per process. 
+  each process use one Python Interpreter.
+
+If you want your application to make better use of the computational resources of multi-core machines,
+you are advised to use multiprocessing or concurrent.futures.ProcessPoolExecutor
+The multiprocessing package offers both local and remote concurrency,
+effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads
+
+If process-based concurrency offers true parallelism in Python, why not always use processes?
+Firstly, only one thread can run at a time within a Python process under most situations,
+except:
+- When you are using a Python interpreter that does not use a GIL.
+- When you are performing IO-bound tasks that release the GIL.
+- When you are performing CPU-bound tasks that release the GIL.
+
+For example, when you are reading or writing from a file or socket
+the GIL is released allowing multiple threads to run in parallel.
+
+
+Thread is much lightweighted than process, and it does is impacted by GIL,
+This means creating, starting, and managing thousands of concurrent tasks,
+such as requests in a server is well suited to threads and not process-based concurrency.
+
+
+### IPC (Inter-Process-Communication)
+Process do not have access to shared memory, instead they must communicate with each other
+using inter-process communication (IPC) mechanisms that simulate shared memory.
+eg. over socket communication or using file-based communication. 
+Tthe data shared between process (must be pickleable) and there is a
+computational overhead to serialize and deserialize all data that is shared.
+
+
+## AsyncIO?
+AsyncIO can be an alternative to using a threading.Thread, but is probably not a good alternative for the multiprocessing.Process class.
+AsyncIO is designed to support large numbers of IO operations, perhaps thousands to tens of thousands, all within a single Thread.
+It requires an alternate programming paradigm, called reactive programming, which can be challenging for beginners.
+When using the multiprocessing.Process class, you are typically executing CPU-bound tasks, which are not appropriate when using the AsyncIO module
+
+
+
+
+##########################
+
+
+RLock
+condition()
+wait()
+
+pid
+set_start_method()  # spawn, folk, forkserver
+current_process()
+parent_process()
+active_children()
+
+
+### Process Shared memory/queue machenism
+Value()
+Array()
+e.g 
+num=multiprocess.Value('i', 3)
+dbnum=multiprocess.Vlaue('d', 3.1415)
+ary=multiprocess.Array('i', range(10))
+
+
+Queue(),    q=multiprocessing.Queue();  q.put(..); q.get(...)
+
+
+### Logging in process
+three main approaches to logging from multiple processes, they are:
+- Use the logging module separately from each process.
+  logger = logging.getlogger();  logging.info(...)
+  The major limitation of this approach is that log messages may be lost or corrupted.
+  This is because multiple processes will attempt to write log messages to the same target, e.g. stream or file.
+- Use multiprocessing.get_logger().
+  logger = get_logger()
+  logger.addHandler(logging.StreamHandler())
+  it has the same downside that the logger must be configured again within each child process and that log messages may be lost or corrupted.
+- Use custom process-safe logging.
+  Effective logging from multiple processes requires custom code and message passing between processes.
+
+For example, a robust and easy to maintain approach involves sending all log messages to one process and
+configuring one process to be responsible for receiving log messages and storing them in a central location.
+
+get_logger()
+
+
+
+The ProcessPoolExecutor in Python provides a pool of reusable processes for executing ad hoc tasks.
+You can submit tasks to the process pool by calling the submit() function and passing in the name of the function you wish to execute on another process.
+Calling the submit() function will return a Future object that allows you to check on the status of the task and get the result from the task once it completes.
+
+
+## Process Safe:
+Thread-safety is a major concern of concurrent programming using threads. This is because threads have shared memory within the process, meaning that concurrent access of the same data or variables can lead to race conditions.
+Processes do not have direct shared memory and therefore are not subject to the same concerns of race conditions.
+Nevertheless, processes do simulate shared memory using socket connections and files and may need to protect simulated shared program state or data from race conditions due to timing and concurrent modification.
+
+multiprocessing.Queue() can be used for process-safe,
+(queue.Queue is thread-safe, but it is not process-safe.)
+The multiprocessing.Queue class is designed to be shared and used among multiple processes. It is process-safe.
+e.g.
+    def producer(queue):
+        print('Producer: Running', flush=True)
+        # generate work
+        for i in range(10):
+            # generate a value
+            value = random()
+            # block
+            sleep(value)
+            # add to the queue
+            queue.put(value)
+        # all done
+        queue.put(None)
+        print('Producer: Done', flush=True)
+    
+    # consume work (blocking mode)
+    def consumer(queue):
+        print('Consumer: Running', flush=True)
+        # consume work
+        while True:
+            # get a unit of work
+            item = queue.get()
+            # check for stop
+            if item is None:
+                break
+            # report
+            print(f'>got {item}', flush=True)
+        # all done
+        print('Consumer: Done', flush=True)
+    
+    # consume work (non-blocking)
+    def consumer_nonblock(queue):
+        print('Consumer: Running', flush=True)
+        # consume work
+        while True:
+            # get a unit of work
+            try:
+                item = queue.get(block=False)
+            except Empty:
+                print('Consumer: got nothing, waiting a while...', flush=True)
+                sleep(0.5)
+                continue
+            # check for stop
+            if item is None:
+                break
+            # report
+            print(f'>got {item}', flush=True)
+        # all done
+        print('Consumer: Done', flush=True)
+    
+    # entry point
+    if __name__ == '__main__':
+        # create the shared queue
+        queue = Queue()
+        # start the consumer
+        consumer_process = Process(target=consumer, args=(queue,))
+        consumer_process.start()
+        # start the producer
+        producer_process = Process(target=producer, args=(queue,))
+        producer_process.start()
+        # wait for all processes to finish
+        producer_process.join()
+        consumer_process.join()
+
+If there are multiple consumers that need to get the message, then a consumer may get the None item, and re-add it for other consumers to consume and respond to.
+
+
+
+
+
+__main__ is the name of the top-level environment used to execute a Python program.
+
+Using an if-statement to c
+
+
+
+
+
+
+#################
+references:
+https://superfastpython.com/threading-in-python/
+https://superfastpython.com/multiprocessing-in-python/
+
+
+"""
+
+
+
+
