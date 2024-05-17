@@ -1,0 +1,938 @@
+
+
+AWS Region encompasses multiple Availability Zones, and each AZ is designed to be independent and resilient
+
+
+
+Region:
+   A physical location around the world where AWS clusters data centers
+
+AZ (Availability Zone)
+  A set of data centers located within an AWS Region
+
+
+
+
+
+/////////////////////
+[IAM]
+
+
+Group only contain users, no sub-Group
+IAM is a global service, not regional
+AMIs are built for a specific AWS Region, they're unique for each AWS Region. 
+
+
+# Security Group:
+
+Security Group can be attached to multiple EC2 instances within the same AWS Region/VPC
+
+Security Group vs ACL:
+- Security group is the firewall of EC2 Instances.
+- Network ACL is the firewall of the VPC Subnets
+
+Security Group	                            Network Access Control List
+--------------------------------------------------------------------------
+operate at instance level.	                operate subnet level.
+support only allow rules.	                support allow & deny rules.
+stateful                                    stateless, it return traffic must be allowed explicitly.
+cannot block specific IP                    can block specific IP Address using NACL.
+All rules evaluated before decision.     	Rules are processed in number order when deciding whether allow traffic.
+start with instance launch configuration.	assigned to subnet for all instance.
+applies when someone specifies SGs          do not depend on user it automatically apply all instances with subnet.
+  when launching the instance.	
+
+
+
+//////////////////////
+[EC2]
+
+Options:
+
+
+- Spot Fleet
+  a set of Spot Instances and optionally On-demand Instances. It allows you to automatically request Spot Instances with the lowest price.
+
+
+
+Elastic IP:  5 per account
+But suggest to use random public IP + DNS, or use LB.
+
+- EC2 Instance Placement Groups:
+  Cluster:   in a single AZ (Availability Zone)
+             High network performance, 
+  Spread:    instances spread across hardware, limit max 7 instance per AZ per PlacementGroup
+             High availability
+  Partition: instances spread across particions across AZs, (max 100 instance, up to 7 partitions per AZ)
+             Medium network, medium availability
+
+- ENI
+  logic Network Card in VPC bound to a specific AZ.
+  Can attach to EC2 instances on the fly.  (failover case)
+
+- Hibernate
+  Dump RAM to EBS.
+
+- EBS (Elastic Block Store)
+  EBS is a network drive attach to an EC2 instance.
+  One EBS can only be mounted to one instance at a time (at CCP level), but EC2 can have multiple EBS attached.
+  EBS is bound to a specific AZ
+  Delete on termination:
+    root EBS is deleted by default on EC2 termination (but canb e configured to preserve)
+    other EBS is not deleted by default on EC2 termination.
+  Use EBS Snapshot to transfer (copy) volume across AZ or Region.
+
+  EBS Volume Type
+  - gp2/gp3 (SSD):               General Purpose.   (gp3: independent IOPS/Throughput)
+                                 IOPS: 3000 ~ 16000, 
+                                 throughput: 125~1000 MB/s
+  - io1/io2 Block Express (SSD): Low latency High throughput
+                                 IOPS: [io1] 32000/64000(Nitro EC2), [io2] 256000
+                                 Throughput: 
+                                 Support Multi-attach
+  - sl (HDD):                    Low cost throughput indensive
+                                 IOPS: 500
+  - sc (HDD):                    Lowest cost low frequent access (Cold)
+  Bootable EBS:gp2/gp3, io1/io2; (HDD cannot be used as bootable disk)
+
+
+  - EBS instance-store,          ephemeral, physically attached to EC2, very high IOPS/Throughput
+                                 IPOS: ~1400000
+                                 Throughput
+  - EBS Multi-attach (io1/io2)   EBS:EC2(within same AZ) = 1:N, 
+                                 max=16, 
+                                 cluster-aware file system
+
+- EFS (Elastic File System)
+  EFS,  multi EC2 concurrent access, across-AZ/Region, scalable, 
+
+  Storage-class:
+  - Standard
+  - EFS-IA (Infrequent Access),  with Lifecycle Policy
+           Availability: Regional (Across AZ) | One-Zone (single AZ)
+
+  - EBS               vs               EFS    
+    one instnce                      multi-instances (100)
+    (except multi-attach io1/io2)
+    same AZ                          Across AZ
+
+
+
+
+///////////////////////////
+[ELB]
+
+LB listener:
+  A listener is a logical entity within a load balancer that checks for incoming traffic based on the configured protocol and port.
+
+Type of LB
+- CLB (Classic LB),  old Gen, to obsolete
+  HTTP/HTTPS, SSL, TCP
+- ALB (Application LB),  L7
+  LB to multiple application within or across machines
+  >> Great fit to micro-service/containerized-application
+- NLB (Netowrk LB)
+  TCP, UDP, TLS,
+- GWLB (Gateway LB)
+  L3 (IP)
+
+
+LB SG (Security Group)
+EC2 only allow traffic from LB.
+
+ALB (Application LB)
+  L7 HTTP/HTTPS, websocket
+  Supprot port-mapping
+  Direct traffic to Target-groups: EC2 instances/EC2 tasks/Lambda functions/Private-IP
+    >> ALBs can route traffic to different Target Groups based on URL Path, Hostname, HTTP Headers, and Query Strings.
+    >> ALB can redirect all HTTP requests to HTTPS by config listener rule -
+       on HTTP lister, redict HTTP to HTTPS, and create HTTPS listener to handle client requests (been redirected)
+  ALB terminate client IP, (using ALB IP to communicate with target executor)
+  ALB comes with a fixed hostname/url
+  Latency:  400ms
+  >> You can't attach an Elastic IP address to Application Load Balancers.
+
+NLB (Network LB),  
+  L4 TCP/UDP
+  IP: One static IP per AZ, support Elastic IP   (==> support 1,2,3 IPs to access)
+  Direct traffic to Target-groups: EC2 instances, IP addresses (Private), ALB
+  Health check support: TCP, HTTP, HTTPS
+  RPS:     million
+  Latency: 100ms
+  >> NLB provides the highest performance and lowest latency if your application needs it.
+
+  Use cases:   We can deploy NLB infront of ALB.   NLB provide fixed static IP
+
+GWLB
+  L3 IP
+  Function: GW and LB
+            Deploy a fleet of 3rd party Network Virtual Apps in AWS (eg. FW, IDP, DPI)
+  Protocol: GENEVE on port 6081,
+  Target Groups:  EC2 instances, IP Addresses (private)
+
+  Users (source) ----> =GWLB= ---> Application (dest)
+                       |    ^
+              (GENEVE) |    |
+                       |  Security APPs
+                        > (Firewall, Intrution Detect, Deep Packet Instpection ...)
+
+
+Access LB via DNS/IP
+Only Network Load Balancer provides both static DNS name and static IP. 
+Application Load Balancer provides a static DNS name but it does NOT provide a static IP.
+
+
+ELB reserved cookie names:  AWSALB, AWSALBAPP, AWSALBTG
+
+
+Sticky Sessions
+  client --stick--> backend instances
+    (cookie)
+  work for CLB, ALB, NLB.
+
+  Cookie type:
+  - Application-based Cookies
+    >> Customer cookie:
+       Generated by target, 
+       use target group specific name. (not LB reserved name)
+    >> Application cookie: 
+       Generated by LB.
+       name: AWSALBAPP
+  - Duration-based Cookies
+    Generted by LB
+    name: AWSALB (for ALB), AWSELB (for CLB)
+
+Client IP:
+  When using an ALB, the IP address the backend receives requests from will be the ALB's private IP .
+  To get the client's IP, ALB adds an additional header called "X-Forwarded-For" contains the client's IP address.
+
+
+Cross-Zone LB
+  each LB distribute evently accross all the registered instances in all AZ.
+
+  By default:
+    ALB: enabled. no charge for inter-AZ data
+    CLB: disabled. no charge for inter-AZ data
+    NLB: disabled. charge for inter-AZ data
+    GWLB: disabled. charge for inter-AZ data
+
+  Cross-Zone enabled:  LB per instances of all AZs
+             disabled: LB per AZs
+
+  eg.
+    AZ1 (2 instances), AZ2 (8 instances):
+    Cross-zone LB enabled:  each instance gets 1/10
+                 disabled:  each AZ get 1/2
+
+
+ELB SSL Certificate
+  ACM (AWS Certicifate Manager)
+  SNI (Server Name Indication) 
+    SNI allows you to expose multiple HTTPS applications each with its own SSL certificate behind the same listener (LB). 
+       by binding multiple certs to the same secure listener on the LB
+    >> allow loading multiple SSL cert for one web server
+       only works for ALB, NLB, CloudFront.
+
+  CLB(v1): support only one SSL Certificate
+  ALB(v2): support multiple listensers with multiple SSL certs, with SNI
+  NLB(v2): support multiple listensers with multiple SSL certs, with SNI
+
+
+Connection Draining:
+(The timer for graceful termination of existing connection)
+typical use cases:
+  scaling (up/down), graceful shutdown, deregistration at health-check failure 
+
+
+ASG (Auto-Scaling-Group)
+  goal:
+    - scale out (+) / scale in (-) per load
+    - add/remove EC2 instances on health check
+    - ensure min/max number of EC2 instances
+  setting: 
+    min-capacity, desired-capacity, max-capacity
+  Lauch Template:
+    - AMI, Instance type, EBS volumes, User data, SG, IAM role, ssh key-pairs, network/subnet, LB, 
+  Scale triggering:
+    - metrics,  e.g. EC2 requests target, network I/O, 
+    - CloudWatch Alarms (e.g. Avg CPU, or customize metrics)
+    - health check
+  Scaling Policy
+    - Dynamic Scaling:
+        Target Tracking Scaling (e.g avg CPU stay at 40%)
+        Simple/Step Scaling: CloudWatch alram trigger. e.g (CPU>70% +1, CPU<30% -1)
+    - Scheduled Scaling:
+    - Predictive Scaling:(based on continous forcast)
+  Scaling Cooldown (stablize).   default 300s
+
+  >> You can configure the Auto Scaling Group to determine the EC2 instances' health based on Application Load Balancer Health Checks instead of EC2 Status Checks (default).
+     When an EC2 instance fails the ALB Health Checks, it is marked unhealthy and will be terminated while the ASG launches a new EC2 instance
+
+
+
+////////////////////////////////
+[RDS]
+(Amazon Relational Database Service)
+
+Support:
+  Postgres, MySQL, MariaDB, Oracle, Microsft SQL Server, IBM DB2, Aurora (AWS)
+
+Advantages:
+  - Auto provision, OS patch
+  - Auto backup/restore
+  - Read replicas
+  - Auto scaling (Horizontal & Vertical)
+  - Multi Availability zones and DR (Disaster recovery)
+  - Storage backed by EBS (gp2 or io1)
+  - Mornitoring Dashboard
+Limitation:
+  - User cannot ssh into the DB instances
+
+Storage Auto-Scaling.
+  trigger: e.g.
+  - free storage < ?%
+  - low storage at least 5 min
+  - xx hours since last modifiction
+
+
+RDS Read Replicas 
+  - up to 15
+  - within AZ or cross AZ/Region
+  - Replication is Asynchronous, -- eventually consistent   *
+  - can be promoted to their own DB.
+  - need to update the connection string to leverage the read replicas   *
+    (however, Multi-AZ keeps the same connection string regardless of which database is up.)
+
+  replication traffic is free within same region, even if across AZ
+
+RDS Multiple AZ 
+(for Disaster Recovery)
+  - Synchronous Replication.   *
+    When enable Multi-AZ, RDS automatically creates Standby replica in different AZ within the same Region.
+  - One same DNS name, auto APP failover
+  - Not used for scaling
+
+  >> Multi-AZ deployments are not designed for cross-region HA; they focus on ensuring availability within a single Region12
+  
+  >> The read replicas can be setup as Multi-AZ for Disaster Recovery.
+  >> How to make RDS from single-AZ to multi-AZ, with zero downtime
+     - modify DB setting to change SZ to MZ. behind the scene
+       1> DB snapshot taken
+       2> Standby DB created from DB snapshot
+       3> Sync replication start b/w master & standby
+  >> Read Replicas will help when analytics query slows down the main RDS DB,
+     as your analytics application can now perform queries against read-replica(s), and these queries won't impact the main production RDS database.
+
+
+Synchronous or Asynchronous Replication:
+  RDS support both Synchronous and Asynchronous replication.
+  - RDS Multi-AZ uses synchronous replication for high availability on multi-AZs within the same AWS Region.
+    Replication occurs synchronously between the primary and standby replica WITHIN the same Region
+    (Multi-AZ only support same Region)
+  - Read replica:
+    RDS Read Replica use Asynchronous replication -- enventual consistent
+  - Cross-region read replica: 
+    Asynchronous replication.
+    Cross-region read replicas provide global read scalability and disaster recovery, but with replication lag.
+
+  >> For multi-AZ RDS replication, synchronous replication is used.
+  >> For non-Multi-AZ deployments or cross-region replication, asynchronous replication is used.
+  >> In contrast, Aurora uses synchronous replication for both within-region and cross-region deployments.
+
+RDS Custom
+  support Oracle and MS SQL DB.
+  Access the underlying DB and OS, to
+  - config setting, instal patches, enable native features, 
+  - access the underlying EC2 instance using SSH or SSM Session Manager
+  Need to de-activate automation Mode to perform the customization
+  RDS s RDS custom:
+  - RDS: DB and OS fully managed by AWS
+  - RDS Custom: full admin access to the underlying OS and DB.
+
+
+Amazon Aurora
+  AWS proprietary .
+  Aurora support both Postgres and MySQL
+  AWS cloud optimized:  Performance x5 (MySQL on RDS), x3 (Postgres on RDS)
+  Auto expanding (storage grow), 10G ~ upto 128T.
+  Master + up to 15 replicas, faster replicatin process than MySQL (sub 10 ms replica lag)
+  Auto scaling (read replicas) and push-button scaling
+  HA native, auto failover/backup & recovery (backtrack: to restore at any point of time)
+  cost +20% than RDS.
+
+  Aurora HA:
+  - 6 copies across 3 AZ (1 primary, 5 secondary DB cluster)
+  - 4/6 for Write, 3/3 for read
+  - self healing with peer-peer replication
+  - storage striped across 100s of volumes. (Shared storage volume). Autom expand.
+  - within-region replication: synchronous between primary and secondary clusters
+  - support cross region replication (Synchronous)
+  - failover < 30s
+
+  RDS Multi-AZ vs Aurora Global Database:
+  - Choose RDS Multi-AZ for simpler HA needs within a single region.
+    RDS Provides HA on different AZ within the same AWS Region
+    RDS cross region read replicas are Asynchronous and serve READ workloads.  (so it is not a fully R/W HA across region)
+  - Choose Aurora Global Database for global HA, low-latency reads, and disaster recovery across multiple AWS Regions. (Synchronous replication)
+
+
+  Write Endpoint (point to Master)
+  Reader Endpoint (Conntion Load Balancing)
+             Client 
+           /        \ 
+      (Write)      (Read)
+        /              \
+    Write EP     Read EP1, EP2, ...
+       |               |   |
+     [===Shared Storage Volume=== ]
+
+
+  Aurora Replicas Auto Scaling
+
+  Custom Endpoint
+  - define a subnset of Aurora instances as a Custom Endpoint
+    e.g. Run analytical queries on specific replicas.
+  - Reader Endpoint is generally not used after defining Custom Endpoints
+  >> we can setup multiple Custom Endpoints for different type (subsets) of queries.
+
+  Aurora Serverless
+  - 'managed Aurora'
+  - Automated DB instantiation and auto-scaling ased on actual usage
+  - no capacity planning needed.
+  - pay per sec
+  - good for in-frequent, intermittent or unpredicatable workloads.
+
+  Global Aurora
+  - Cross Region Read Replicas
+  - 1 Primary Region (R/W) + up to 5 Secondary (RO) regions. Replica lag < 1s cross region
+    up to 15 replicas in each secondary region
+  - Promoting another region (for disaster recovery), RTO < 1min
+  >> max 5 secondary region, max 15 replicas in each region.   *
+
+  Aurora Machine Learning
+  - ML based prediction to applications
+  - optimized and secure integration b/w Aurora and AWS ML services
+  - Support: Amazon SageMaker (any ML model), Comprehend (for sentiment analysis)
+  use cases: frad detection, ads targeting, product recommendation, sentiment analysis etc
+
+  Aurora DB cloning
+  - Create a new DB cluster from the existing one
+  - Faster than Snapshot & restore, 
+  - using copy-on-write protocol
+    init new DB using the same DB volume (fast and no copying)
+    when updates are made, additional storage is allocated and data is copied to be separated.
+  - Fast & cost-effective
+  >> Use case: user create 'staging' DB from a 'production' DB without impacting the prod DB
+
+RDS & Aurara Backup & restore
+  Backup
+  - Automated backups.  (1~35 days of retention), 
+        Can be disabled in RDS, cannot be disabled for Aurora.
+    Full backup (daily)
+    Transaction log backup every 5s
+    Restore to any point
+  - Manual DB Snapshots. (retain as long as you want)
+  >> You will still pay for storage in a stopped RDS DB.
+     Use snapshot & restore if you plan to stop it for long time. (cost much less)
+  Restore
+  - Restore RDS/Aurora backup or snapshot to create a new DB.
+  - Restore MySQL RDS DB/Aurora cluster from S3
+    Use case:
+      Create backup of on-premises DB, (For Aurora needs to use Percona XtraBackup)
+      store in AWS S3
+      Restore the backup into a new RDS instance/Aurora cluster
+  
+RDS & Aurora Security
+  - At-rest encryption
+    DB master & replicas encryptioned using AWS-KMS
+    must define at launch time
+    if master is not encrypted, the read replicas can NOT be encrytped
+  - In-flight encryption
+    TLS-ready by default.
+    use AWS TLS root certificate clients
+  - IAM Authentication - connect DB using IAM roles (instead of usr/pwd)
+  - Security Groups -  control network access to RDS/Aurora
+  - No SSH except on RDS Custom
+  - Audit logs to CloudWatch
+
+
+RDS Proxy
+  Fully managed DB proxy for RDS
+  - Allows apps to pool and share the DB connections
+  - improve efficiency
+  - Serverless, auto-scaling, HA (multi-AZ)
+  - Redulce RDS & Aurora failover time by up 66%
+  - No code change required for most apps
+  - Enforce IAM AUthentication for DB, securely store credentials in AWS Secrets Manager
+  - RDS Proxy is NEVER public accessible. must access from VPC
+    VPC:  Lambda functions ---(private subnet)--- RDS Proxy -- RDS DB Instance(s)
+
+
+ElastiCache
+  Managed Redis or Memcached.
+  - In-memory DB (High performance, low latency)
+  - Reduce read-intensive workloads
+  - Helps to make your application stateless
+  - AWS take care of OS maintentance/patching, optimization, setup, config, monitor, backup, failure recovery
+  - Using ElastiCache involves HEAVY APP code changes.
+
+  Solution
+  - DB Cache
+  - User session store (App writes session data into ElastiCache)
+  >> Storing Session Data in ElastiCache is a common pattern to ensuring different EC2 instances can retrieve your user's state if needed.
+
+  Redis vs Memcached
+  Redis is an in memory DB with HA (using Replication);   
+    Rich feature, support complex data types. 
+    Replication, Data persistent, HA, Backup & Restore
+  Memcached is a distributed in memory DB WITHOUT HA (using Sharding).  
+    Simiple (only string data), Fast Key-Value storage. Multi-threaded performance
+    Sharding, No Data-persistent, No HA, No Backup & Restore
+
+      REDIS                                 MEMCACHED
+    ----------------------------------------------------------  
+                                            Sharding (Multi-node for Data partitioning)
+                                            Multi-thread architecture
+    Multi-AZ/Auto-Failover                  No multi-AZ/Failover
+    ReadReplicas & HA                       No replication, No HA
+    Data Durability with AOF persistance,   No data persistent. Data lost at restart
+    Backup & Restore                        No backup & restore
+    Support Set/Sorted-sets
+
+  'AOF': Append Only File.  -- every write operation is logged into file, the cache can be re-constructed automatically at catastrophic event.
+
+  ElastiCache Security
+  - support IAM Authentication
+    to enhance the security of ElastiCache Redis Cluster by allowing users to access your ElastiCache Redis Cluster using IAM Identities
+  - IAM policy on ElastiCache is only used for AWS API-level Security
+  - Redis AUTH:    set password/token for Redis Cluster
+  - MemCached: suport SASL-based authentication 
+
+  Patterns for ElastiCache
+  - Lazy loading.  all read data is cached. (data can become stale in cache)
+  - Write Throughput.  (no stale data)
+  - Session Store.   store temporary session data (using TTL feature)
+
+  Use Case:
+  Redis:
+    Gaming Leaderboards.
+    Redis Sorted set
+
+
+
+
+//////////////////////////////
+Route53
+  A HA, Sclable, fully managed and Authoritative DNS
+  Route53 is also a Domain Registrar
+  Support reource health check
+  The only AWS service with 100% availabiity SLA
+
+Concept:
+  TLD: Top Level Domain
+  SLD: Second Level Domain
+  Authoritative: => the customer can update the DNS records.
+
+
+Route53 - records
+  Record contain:
+  - Domain/sub-domain name
+  - Record Type: (basic) A/AAAA/CNAME/NS     *
+                 (advanced) CAA/DS/MX/NAPTR/SOA/TXT/SPF/SRV
+  - Value,  e.g. 1.2.3.4
+  - Routing Policy
+  - TTL
+
+DNS Records Type:
+- A:     IPv4
+- AAAA:  IPv6
+- CNAME: map a hostname to another hostname
+    The target domain must have an A or AAAA record
+    Can NOT create a CNAME record for the top node of a DNS namspace (Zone Apex)
+    e.g.  you cannot create CNAME for example.com,
+          you can create CNAME for www.example.com
+- NS:    Name Servers for the hosted Zone
+
+Route53 - Hosted Zones
+  A container for records that define how to route traffic to a domain and its subdomains
+  - Public Hosted Zones: 
+    contains records specify how to route to the Internet (public domain names)
+  - Private Hosted Zones:
+    contains records specify how to route within VPC(s) (private domain names)
+  - cost:  $0.5 per month per Hosted Zone
+
+  Public vs Private Hosted Zones
+
+Route53 - Register A Domain
+
+Route53 - Records TTL (Time To Live)
+  The time the client cache the DNS query result.
+  TTL is mandatory for DNS record except for Alias records.
+
+Route53 - Alias Records
+  - map a hostname to an AWS resource
+  - An extension to DNS functions
+  - Automatically recorgnizes changes in the resource's IP address
+  - Can be used for the TOP(Root) node of a DNS namespace (Zone Apex). e.g. example.com
+  - Can NOT set TTL for Alias record. (Instead it is set automatically by route53)
+Alias Records Targets:
+  ELB, CloudFront Distributions, API Gateway, Elastic Beanstalk Env, S3 websites, VPC Interface Endpoint, Global Accelerator, Route53 record in the same hosted zone
+  >> you CANNOT set an Alias record for an EC2 DNS name
+
+Route53 CNAME vs Alias
+  CNAME:  point the hostname to any other hostname. (ONLY for NON Root domain)
+  Alias:  point the hostname to an AWS Resource. (works for both Root and Non-Root domain)
+          Free
+
+
+Route53 - Routing Policies
+  Define how Route53 responds to DNS queries
+
+  Policies:
+  - Simple: 
+    route traffic to a single resource
+    can specify multiple values in the same record -- client pick a random one
+    when Alias enabled, specify only one AWS resource
+    cannot associate with Health Checks
+  - Weighted
+    control the x% of the requests that go to each specific resource
+      weight 0 to a record will stop the traffic to a specific resource
+      all records weight 0 means all records same weight, will be returned equally.
+    weights don't need to sum up to 100
+    DNS records must have the same name and type         
+    Can be associated with Health Checks
+    Use cases: load balancing between regions
+  - Latency-based
+    redirect the traffic with the least latency
+    based on the traffic between users and AWS regions    *
+    can be associated with Health Check (has failover capability)
+  - Multiple-value
+  - Geolocation
+  - Failover
+  - 
+
+  Route53 - Health Checks
+  - HTTP Checks are only for public resourcs
+  - Health Check => Automated DNS Failover
+    monitor an endpoint (app, server, AWS resource)
+    monitor other Gealth Checks (Calculated Health Check)
+    monitor CloudWatch Alarms
+  - Health Checks are integrated with CW (CloudWatch) metrics
+
+
+    Health Checks - Monitor an Endpoint
+    - 15 global health checkers for endopint health
+      Failure Threshold - 3 (default)
+      interval - 30 sec (standard), 10 sec (fast)
+      supoorted protocol: HTTP, HTTPS, TCP
+      if > 18% Health Checkers report the endpoint is healthy, Route 53 consider it Healthy.
+      Ability to choose the location you want Route 53 to use
+    - Health Checks pass only when the endpoint responds with 2xx or 3xx status codes
+    - Health Checks can be setup to pass/fail based on the first 5120 Bytes of the response
+    - Configure router/firewall to allow incoming requests from Route53 Health Checkers
+
+    Calculated Health Checks
+    - Combine the results of multiple Health Checks into a single Health Check
+    - Support OR/And/Not logic
+    - Can monitor up to 256 Child Health Checks.
+      (Parent Health Checke -- (1:N) -- Child Health Check)
+    - specify how many of the health checks need to pass to make the parent pass
+    >> Use case:  perform maitenance to website without causing all health checks to fail.
+
+    Health Checks - Private Hosted Zones
+    - Route53 Health Checkers are outside the VPC
+      Health Checkers cannot access private endpoint (in private VPC or on-premises resource)
+    - Solution: Create CloudWatch Metric and associate CloudWatch Alarm,
+                then create Health Check on the alarm
+
+
+  Routing Policies - Failover (Active-Passive)
+    Primary/Secondary EC2 Instances are associated with Route53 Health Check.
+    When DNS requests comes, the response is based on Health Check + Primary/Secondary
+
+
+  Routing Policies - Geolocation
+    Routing is based on user location
+    Specify location by Continent, Country or US State (If overlapping, most precise location selected)
+    Should create 'Default' record (in case there is no match on location)
+    Can be associated with Health Checks
+    >> Use cases: website localization, restrict content distribution, load balancing
+
+  Routing Policies - Geoproximity Routing
+    Route traffic based on the geographic location of users and resources.
+    Ability to shift more traffic to resources based on the defined bias
+      bias: expand (1~99) - more traffic to the resource
+            shrink (-1~-99) - less traffic to the resource
+    Resources can be:
+      AWS resource (specify region)
+      Non-AWS resource (specify Latitude & Longitude)
+    Must use Route 53 Traffic Flow to use this Feature. 
+ 
+  Routing Policies - IP-based Routing
+    based on client IP
+    client CIDRs -> endpoint/location (user-IP-to-endpoint mapping)
+    >> Use cases: route particular clients to specific endpoints
+
+  Routing Policies - Multi-Value
+    Route traffic to multiple resource
+    Route 53 return multiple values/resourcs
+    Can be associated with Health Check (return only values for healthy resources)
+    Up to 8 healthy records are returned / query
+    Multi-Value is NOT suitable for ELB            *
+  
+
+  Domain Registar vs DNS Service
+    they are different services
+      Domain Registar -- register your domain name, typically payiing annual charges.
+                         Domain Registar usually provides DNS service as well
+      DNS Service -- manage DNS records
+    You can buy Domain Registar from SP A and use DNS service from SP B. 
+      -- Configure the DNS servers in the Domain Registar
+    So you can combine Amazon Route53 with 3rd party Domain Registar.
+      - create a Public Hosted Zone in Route53.   (Has to be Public Host Zone since it needs to be accessible by 3rd party)
+      - config NS (NameServer) records on 3rd party Domain Registar to use Route53 Name Servers
+
+
+Elastic Beanstalk
+  an orchestrated service for deploying and scaling web application and servcies.
+  a managed service than automatically handles the
+    capacity provisioning, LB, scaling, app health monitor, instance configuration, ...
+  so that allow user to focus on the Web App itself.
+  User still have full control over the configuration.
+  Beanstalk is free, but user needs to pay the underlying instance/components
+
+  Elastic Beanstalk - components
+  - Application
+    collection of ElasticBeanstalk componets: env, versions, configurations, ...
+  - Application Version
+    a iteration of app code
+  - Environment
+    collection of AWS resources running an application versions
+    Tiers: Web Server (FE) Environment Tier & Worker (BE) Environment Tier
+    Support multiple Env (Dev, prod, test, ...)
+    Flow:   Create Application -- Upload Version -- Launch Env -- Manage Env
+  
+  Elastic Beanstalk - Supported Platforms
+    Go, Java, .NET (Lnx/Win), Node.js, PHP, Python, Ruby, Packer Builder, 
+    Single-Container Docker, Multi-Container Docker, Preconfigured Docker
+
+  Elastic Beanstalk Deployment Modes
+    - Single Instance (e.g for Dev)
+    - HA & LB  (for Prod)
+
+
+
+Instantiating Applications quickly
+  EC2 Instances:
+  - Golden AMI. 
+    Ready made AMI with App&Env, lauch EC2 instances from the Golden AMI directly.
+  - Bootstrap using User Data. 
+    For Dynamic configuration, use User Data Scripts
+  - Hybrid: Elasitc Beanstalk (mix Golden AMI and User Data)
+  RDS Databases:
+  - Restore from snapshot (Schemas & data ready)
+  EBS Volumes:
+  - Restore from snapshot.
+
+Reduce the cost for the deployment with a known min# of EC2 instance --> Reserved Instances.
+
+
+
+
+///////////////////////////////
+S3
+  Infinitly scaling storage
+
+
+  S3 - Buckets
+    Store 'objects' (files) in 'Buckets' (directories)
+    Buckets have globally unique name (accross regions all accounts) -- the only globally unique thing in AWS
+    Buckets are defined at the region level
+    Name convention:  
+      No uppercase, no undersore
+      3-63 char long
+      not an IP
+      must start with lowercase letter or number
+      must not start with the prefix 'xn--'
+      must not end with the suffix '-s3alias'
+    
+    
+  S3 - Objects
+    - Objects (files) have a Key -- a Full Path
+      Key is a long name that contains '/'
+      Objects Key = Prefix + ObjectName.   eg. s3://my-bucket/my-folder/sub-folder/my-file.TXT
+                                                              ---------------------'''''''''''
+                                                                      prefix        objectName
+    - Object value -- the content of the body
+      max object size: 5TB
+      if uploading more than 5GB, must use 'multi-part' uploading
+    - Metadata: list of text key/value pairs, system or user Metadata
+    - Tags:  unicode key/value pair, up to 10.  useful for security / Lifecycle
+    - Version ID (if versioning is enabled)
+
+  S3 - Security
+    - User-based
+      IAM Policy
+    - Resource-based
+      Bucket Policies: allows cross account
+      Object ACL -- finer grain   (can be disabled)
+      Bucket ACL -- less common   (can be disabled)
+    - Encryption
+      encrypt objects in S3 using encryption keys
+    >> an IAM principle can access an S3 object if
+       (The user IAM permission Allows it OR the resource policy Allows it) AND (there is no explicit DENY)
+
+    S3 - Bucket Policies
+      JSON based Policies 
+      - Resources: buckets and object
+      - Effect: Allow / deny
+      - Actions: set of API to Allow or Deny
+      - Principal: the account or use to apply the policy to
+      e.g.
+          {
+            "Version":"2012-10-17",
+            "Statement":[
+              {
+                "Sid":"AddPerm",
+                "Effect":"Allow",
+                "Principal": "*",
+                "Action":["s3:GetObject"],
+                "Resource":["arn:aws:s3:::examplebucket/*"]
+              }
+            ]
+          }
+      Use S3 bucket policy to 
+      - Grant public access to the bucket
+      - Grant access to another account (Cross Account)
+      - Force object to be encrypted at uploading
+
+      Bucket settings for Block Public Access: to prevent company data leaks    
+        (a default overall setting, disable this and apply other access policies)
+        Can be set at account level
+
+    Use cases
+    >> Public Access - Use Bucket Policy
+    >> User Access to S3 - IAM permissions
+    >> EC2 instance access - User IAM Roles
+    >> Cross-Account Access - User Bucket Policy
+  
+
+  S3 - Static Website Hosting
+    S3 can host static websites accessible on Internet
+
+    the website URL will be:
+      http://<bucket-name>.s3-website-<aws-region>.amazonaws.com    or
+      http://<bucket-name>.s3-website.<aws-region>.amazonaws.com
+
+    >> if get 403 Forbidden error, typically that's access issue and you need to set the bucket policy to allow public read.
+
+
+  S3 - versioning
+    Version files in S3
+    enabled at bucket level
+    same key overwrite will change the version: 1,2,3...
+    protect against unintended deleted
+    can roll back to previous version
+    Any file that is not versioned prior enabling versioning will havbe version 'null'
+    suspending versioning does not delete the previous versions
+    delete operation is 'adding a delete marker' if versioning enbled.
+
+
+  S3 - Replication (CRR & SRR)  
+    Must enable versioning in source and dest buckets
+    Must hav eproper IAM permission to S3
+    CRR (Cross-Region Replication)
+    SRR (Same-Region Replication)
+    Buckets can be in different AWS accounts
+    Copying is asynchronous
+
+    S3 Back Replication:
+      After enabling Replication, only NEW objects are replicated.
+      to replicate existing objects, use S3 Batch Replication
+
+    delete marker can be configured to be replicated or Not be replicated.
+    when replicating, delete operation is not replicated, only delete marker is. 
+      so when deleting a specific version (which is a permenant deletion), this operation will NOT be replicated.    *
+
+    Use Case
+    >> CRR - Compliance, low latency access, replication across accounts
+    >> SRR - log aggregation, live replication b/w production and test accounts
+
+
+  S3 Storage Classes
+    Standard - General Purpose
+    Standard-Infrequent Access (IA)
+    One Zone-Infrequent Access
+    Glacier Instant Retrieval
+    Glacier Flexible Retrieval
+    Glacier Deep Archive
+    Intelligent Tiering
+
+    Can move between classes manually using S3 Lifecycle configurations
+
+  
+  S3 Durability & Availability
+    Durability:
+      High Durability (99.999999999% 9s) of objects across multi AZ 
+      same for all storage classes
+    Availability:
+      Measure how readily available a service is
+      Varies depend on storage class
+
+
+  S3 Standard
+    99.99% availabiity
+    Used for frequently accessed data
+    Low latency and high throughput
+    Sustain 2 concurrent facility failures
+    >> Use cases:  big data analystics, mobile/gaming app, content distribution
+
+  S3 Standard - IA  (infrequent Access)
+    99.9% Availability
+    lower cost than Standard but has retrieve cost
+    >> Use cases: Disaster Recovery, backups
+
+  S3 One Zone-IA  (infrequent Access)
+    99.5% Availability
+    High Durability in a single AZ only 99.999999999%
+    >> Use case: store secondary backup copies of on-premise data, or data that can be recreated.
+
+  S3 Glacier
+    Low cost for archiving / backup
+    Pricing:  storage + object retrieval cost
+
+    Glacier Instant Retrieval
+      ms retrieval, 
+      mini storage duration: 90 days
+      >> Use case: data accessed once a quarter  
+
+    Glacier Flexible Retrieval
+      Expedited (1~5 min), Standard (3~5 hours), Bulk (5~12 hours) - free
+      mini storage duration: 90 days
+      >> Use cases:
+
+    Glacier Deep Archive
+      Standard (12 hours), Bulk (48 hours)
+      Mini storage duration 180 days
+      >> Use cases:
+
+  S3 Intelligent-Tiering
+    Small monthly monitoring and auto-tiering fee
+    Move objects automatically between Access Tiers based on usage
+    No retrieval charges
+
+    Freqent Access tier (auto): default
+    Infreqent Access tier (auto): object not accessed for 30 days
+    Archive Instant Access tier (auto):  object not accessed for 90 days
+    Archive Access tier (optional):  configurable from 90~700+ days
+    Deep Archive Access tier (optional): confgurable from 180-700+ days
+
+
+
+
+
+
+
+
+
+
