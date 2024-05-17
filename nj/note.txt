@@ -1,0 +1,14 @@
+
+
+
+# Exporting
+// Both module.exports and exports can be used to export objects from a module
+// module.exports is the real object for export, 'exports' is 'an alias' for module.exports.
+// In Node.js, exports and module.exports initially point to the same object.
+// However, if you assign a new value to exports or module.exports, they will no longer point to the same object.
+// If you assign a new value to exports, it will not affect module.exports.
+// But if you assign a new value to module.exports, it will be the one that is actually exported when the module is required1
+// So if both exports and module.exports are set, module.exports is the real object that gets returned from a require call.
+
+
+
