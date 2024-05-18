@@ -928,6 +928,154 @@ S3
     Deep Archive Access tier (optional): confgurable from 180-700+ days
 
 
+  S3 - Lifecycle Rules 
+    Transition Action:  move objects to <Class XX> <days> after creasion
+    Expiration Action:  config object to expire (delete) after some time
+      - Access log can be deleted after 365 days
+      - Can be used to delete old version of file (if versioning is enabled)
+      - Can be used to delete incomplete multi-part uploads
+    Rules can be created for a certain prefix
+    Rules can be created for a certain objects Tags
+    >> Use cases:  
+       S3 objects need to be recoverable immediately for 30 days (rarely happen); 
+       then after 365 days, deleted objects should be recoverable within 48 hours.
+       Solution:
+         Enable S3 versioning -> deletion recoverable
+         Transition rule 1: non-current versions to Standard IA,
+         Transition rule 2: (after rule 1) non-concurrent versions to Glacier Deep archieve
+       
+  S3 Analytics - Storage Class analysis  
+    Report updated daily, with the objects StorageClass, date, age, etc
+    Help to decide when to transition objects so the right storage class
+    Recomendations for Standard and Standard IA. (Not work for One-zone or Glacier)
+    24-48 hours to start seeing the data analysis
+
+S3 - Requester Pays.
+  'Requester Pays buckets'
+  The requester must be authenticated in AWS (not anonymous)
+
+
+S3 Event Notification
+  Events: 
+    e.g. S3:ObjectCreated, S3:ObjectRemoved, S3:ObjectREstore, S3:Repication
+  Object Name filtering possible
+  Can create as many S3 events as desired
+  S3 events can be delivered to SNS, SQS, Lambda Function, etc
+  S3 event notification typically deliver events in seconds, but can take a min or longer sometimes.
+  for the notification: define  Event, object Filter, destinations (with Access Policy)
+
+  >> Use case: generate thumbnails for images uploaded to S3.
+
+
+  S3 Event Notification - IAM permissions
+    Defie Resource Access Policy on the target resources (SNS, SQS, Lambda Funciton, etc)
+    e.g 
+      SNS Resource (Access) Policy
+      SQS Resource (Access) Policy
+      Lambda Resource Policy
+
+  S3 Event Notification - Amazon EventBridge
+    EventBridge can be turned on/off
+      when enabled, all S3 Event Notification are sent to Amazon EventBridge
+    Features:
+      - Advanced filtering options with JSON rules (object name, size, metadata, ...)
+      - Multiple Destinations
+      - EventBridge Capabilities - Archive, Replay Events, Reliable delivery, ...
+
+  S3 - Baseline Performance
+    S3 auto scales to high reqeust, latency 100-200ms
+    3500 PUT/COOPY/POST/DELETE or 5500 GET/HEAD Requests per sec per prefix in a bucket
+    No limits to the number of prefixes in a bucket
+    Spreading reads across N prefixes evently, you can achieve N * 5500 reqeust/s for GET/HEAD.
+
+    Multi-part upload:
+      Parallelize uploads
+      Recommended for file > 100MB, Must use for files > 5GB
+      >> Speed up uploading
+    
+    Transfer Acceleration:
+      Increase transfer spped by transferring file to AWS Edge location, which will forward data to S3 bucket in the target region.
+      Files ---(public)---> Edge location in target Region ---(private AWS)---> Bucket in target Region
+      Compatible with Multi-part upload
+      >> Speed up uploading
+
+    S3 Byte-Range Fetches
+      Parallelize GETs by requesting byte ranges
+      better resilience in case of failures
+      >> speed up downloading
+         or used in retrieving only partial data (e.g. File header)
+
+  S3 Select & Glacier Select
+    Retrive less data using SQL by performing Server-Side Filtering
+    Can filter by rows & columns (simple SQL statements)
+    less data -> less network transfer / CPU / Cost
+
+
+  S3 Batch Operations
+    Perform bulk operation on S3 objets with a single request.
+    A job consists of a list of objets, the action to perform and optional parameters
+    -- Use S3 Inventory to get object list and    *
+       Use S3 Select to filter object
+       S3 Inventory --(Objects list)--> S3 Select --(filtered objects)--> S3 Batch Operations --(processed Objects)
+    benefits:
+      S3 Batch Operation manages retries, tracks progress, send completion notifications, generate reports.
+
+    e.g.
+      Modify object metadata/properties
+      Copy objects
+      Encrypt un-encrypted objects
+      Modify ACLs, tags, ..
+      Restore object form Glacier
+      Invoke Lambda function for custom action on each object
+
+
+  S3 - Storage Lens
+    Analyze, optimize storage
+    Aggregate data for Organization/Accounts/Regions/Buckets/prefixes
+    Default/Customized dashboard
+    can be configured to export metrics daily to an S3 bucket (CSV, Parquet)
+
+    Default Dashboard
+      Visualized summarized insights
+      Shows multi-Region & multi-accounts data
+      Cannot be deleted but can be disabled
+
+    metrics
+      Summary metrics
+        e.g. StorageBytes, Object counts
+        >> Use case:  identify fastset-growing or not-used buckets/prefixes
+
+      Cost-Optimizaiton metrics
+        NonCurrentVersionStorageBytess, etc
+        >> Use case: identify buckets incomplete multi-part uploaded loder than 7 days
+                     idnetify the objects could transition to lower-cost storage class
+
+      Data-Proetction metrics 
+        e.g. VersioningEnabledBucketCount
+        >> Use case: identify buckets that are not following data-protection best practices
+
+      Access-management metrics
+        insight for S3 Object Ownership
+        >> Use case: which object Owership setting the buckets use
+
+      Event metrics
+        >> 
+
+      Performance metrics
+
+      Activity metrics
+
+      Status Code metrics
+
+      Free vs Paid metrics
+      - Free metrics
+        contains 38 usage metrics
+        available for query for 14 days
+      - Advanced metrics
+        Advance metrics: Activity, advanced cost optimizatin, advanced data protection, status code
+        Cloudwatch publishing
+        Prefix aggregation (Collect metrics at the prefix level)
+        Data available for query for 15 months
 
 
 
@@ -936,3 +1084,15 @@ S3
 
 
 
+
+
+
+
+
+
+
+
+
+
+---
+The Study Note is from the udemy tutorial "Ultimate AWS Certified Solutions Architect Associate SAA-C03"
