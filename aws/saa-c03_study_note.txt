@@ -943,7 +943,10 @@ S3
          Enable S3 versioning -> deletion recoverable
          Transition rule 1: non-current versions to Standard IA,
          Transition rule 2: (after rule 1) non-concurrent versions to Glacier Deep archieve
+    >> Use case: cleanup the old unfinished parts from multi-part upload
+       Solution: S3 Lifecycle Policy to automate the old/unfinished parts deletion
        
+
   S3 Analytics - Storage Class analysis  
     Report updated daily, with the objects StorageClass, date, age, etc
     Help to decide when to transition objects so the right storage class
@@ -1076,6 +1079,102 @@ S3 Event Notification
         Cloudwatch publishing
         Prefix aggregation (Collect metrics at the prefix level)
         Data available for query for 15 months
+
+  S3 - Object Encryption
+    S3 Object Encryption methods:
+    SSE: (Server-Side Encryption)
+    - SSE-S3:  (Server-Side Encryption with S3 Manged Keys) 
+      Encrypt S3 Objects using keys handled, managed and owned by AWS
+      Enabled by Default
+    - SSE-KMS: (Server-sdie Encryption with KMS Keys stored in AWS KMS)
+      Leverage AWS Key Management SErvice to manage encryption keys
+    - DSSE-KMS: (Dual-layer Server-Side Encryptin with KMS)
+    - SSE-C:   (Server-side Encryption with Customer-Provided Keys)
+      customers manage their own encryption keys.
+    CSE (Client-Side Encryption)
+
+    S3 Encryption - SSE
+    - Keys handled, managed and owned by AWS
+    - Server-Side encryption
+    - AES-256
+    - Must set header 'x-amz-server-side-encryption':'AES256'
+    - Enabled by default for new buckets & new objects
+
+    S3 Encryption - SSE-KMS
+    - Keys handled and managed by KMS
+    - KMS advantages:  user control + audit key usage using CloudTrail
+    - Server-Side encryption
+    - Must set header 'x-amz-server-side-encryption':'aws:kms'
+    Limitation:
+      impacted by KMS limit
+      when uplad, call GenerateDataKey KMS API
+      Count towards the KMS quota per second (5500,10000,30000 req/s based on region)
+      Can request a quota increase using the Service Quota Console
+
+    S3 Encryption - SSE-C
+    - Keys handled and managed by Customer outside AWS
+    - AWS S3 does NOT store the encryption key
+    - Server-Side encryption
+      AWS S3 use the client provided key (in every HTTPS header) to encrypt the data
+    - HTTPS must be used
+    - Encryption Key must provided in HTTP headers, for every HTTP request mode
+    - HTTP header set 'x-amz-server-side-encryption-customer-algorithm':'true'
+
+    S3 Encryption - CSE
+    - Client fully manage the keys and encryptioned
+    - Client encrypt data before sending to S3
+    - Client decrypt data when retrieving from S3
+    - Use client side lib e.g. AWS S3 Client-Side Encryption Library
+
+  S3 - Encryption in transit (SSL/TLS)
+    AWS S3 exposes 2 endpoints:  
+      HTTP Endpoint
+      HTTPS Endpoint 
+    HTTPS is mandatory for SSE-C
+    Most client use HTTPS by default
+
+  Force Encryption in Transit:  
+    set S3 bucket policy to deny HTTP
+    connection option of 'aws:SecureTransport' == True|False
+
+
+  S3 - Default Encryption vs Bucket Policies
+    Default Encryption: SSE-S3
+    Optionally, force encryption using bucket policy
+      -> Refuse API call of PUT (S3 Object) without encryption header
+      -> Deny condition: 'x-amz-server-side-encryption-customer-algorithm':'true'
+    >> Bucket Policies and evaluated before 'Default Encryption' setting
+
+
+  CORES (Cross-Origin Resource Sharing)
+    -- Web browser based mechanism to allow requests to other origins while visiting the main origin
+    Origin = schema (protocol) + host (domain) + port
+       eg:    https               example.com     443  
+
+    Alow the 'other origin' requests using CORES Headers (e.g. Access-Control-Allow-Origin)
+
+            Origin Web Server                          Other Web Server
+    (origin.com)                                          (other.combine)
+    HTTPS Req ---->
+                    --------- Preflight Request -------->
+                    OPTIONS/
+                      Host: other.com
+                      Origin: origin.com
+                    
+                    <-------- Prefilight Response ---------
+                     Access-Control-Allow-Origin: https://origin.com
+                     Access-Control-Allow-Method: GET, PUT, DELETE
+
+                    <---(CORS Header received by the origin)--> 
+                    GET / 
+                      Host: other.com
+                      Origin: origin.com
+
+
+
+
+
+
 
 
 
