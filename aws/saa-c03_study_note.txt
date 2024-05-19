@@ -1278,6 +1278,81 @@ S3 Event Notification
               |
               |---- Lambda Function 2 ---- [S3 Object Lambda Access Pint] ---- [APP 2]
 
+    >> Use case:
+       convert across data formats, like XML to JSON
+       resizing and water-mark images on the fly using the caller-specific details
+
+
+
+
+///////////////////////////////////
+AWS CloudFront
+
+  Content Delivery Netowrk (CDN)
+
+  Improve read performance by caching the content at the Edge, improve user experience.
+  216 Point of persence globally (edge location)
+  DDoS protection (because worldwide), integration with Shield, AWS WAF
+
+  Origins:
+  - S3 Bucket
+    Enhanced security with CloudFront Origin Access Control (OAC)
+      OAC is replacing OAI (Origin Access Identity)\
+    CloudFront can be used as an ingress (for files uploading to S3)
+  - Custom Origin (HTTP)
+    ALB (Application Load Balancer)
+    EC2 instance
+    S3 website
+    Any HTTP backend
+
+
+    ------------ CloudFront -------------
+    |                                   |
+                            _____ Edge-1:    clients (public)
+                           /       ...         ...
+      [Origin (S3 bucket)] ------ Edge-x:
+               |           \_____ Edge-n:    clients (public)
+               |
+      {Origin Access Control}
+        (S3 bucket policy)
+
+    
+  CloudFront - ALB or EC2 as origin
+
+    EC2 origin
+      The EC2 instance MUST be Public (for CloudFront to access)
+    ALB origin
+      The ALB MUST be public, The EC2 instance can be private (behind ALB)
+
+
+  CloudFront Geo Restriction
+    Restrict who can access the CloudFront distribution.
+      AllowList: to allow users from the listed countries
+      BlockList: to block users from the listed countries
+    The 'country' is determind using a 3rd party Geo-IP database
+    >> Use case: Copyright Laws to control access to the content
+
+
+  CloudFront - Pricing
+    The cost of data out per edge location varies
+    Can recude the edge locations for cost reduction
+
+    Price Classes:
+      Price Class All: all regions, best performance
+      Price Class 200: most regions, excluding the most expensive regions
+      Price Calss 100: only the least expensive regions
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
