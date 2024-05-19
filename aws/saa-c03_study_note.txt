@@ -1148,8 +1148,10 @@ S3 Event Notification
 
   CORES (Cross-Origin Resource Sharing)
     -- Web browser based mechanism to allow requests to other origins while visiting the main origin
-    Origin = schema (protocol) + host (domain) + port
-       eg:    https               example.com     443  
+    "Acces-Control-Allow-Origin: <origion>"
+    "Access-Control-Allow-Method: <Methods>"
+      Origin = schema (protocol) + host (domain) + port
+         eg:    https               example.com     443  
 
     Alow the 'other origin' requests using CORES Headers (e.g. Access-Control-Allow-Origin)
 
@@ -1169,23 +1171,112 @@ S3 Event Notification
                     GET / 
                       Host: other.com
                       Origin: origin.com
+    
+    S3 - CORS
+      Needs to enable the correct CORS headers for client requests to S3 bucket.      *
+      allow specific origin or * (all origin)
+
+      S3 CORS setting:
+      e.g
+        [
+          {
+            "AllowedHeaders"  [ "Authorization" ],
+            "AllowedMethods": [ "GET" ],
+            "AllowedOrigins": [ "<url of origin (without slash at the end)>" ],
+            "ExposeHeaders":  [],
+            "MaxAgeSeconds": 3000
+          }
+        ]
 
 
+  S3 - MFA Delete
+    MFA (Multi-Factor Authentication)
+      force user to generate a code on device beofre doing important operations on S3
+    To use MFA delete, Versioning must be enabled on the bucket
+    Only the bucket owner (root account) can enable/disable MFA Delete
+
+    MFA will be required when, e.g.
+    - permanent delete on an object version
+    - Suspend Versioning on the bucket
 
 
+  S3 Access logs
+    log can be enabled on S3 buckets
+    The log date can be analyzed using data analysis tool
+    the target logging bucket must be in the same AWS Region
+    Do NOT set the logging bucket to be the monitoring bucket! -- will create logging loop
+
+  S3 - Pre-Signed URLs
+    Users given a pre-signed URL inherit the permissions of the user that generated the URL for GET/PUT
+    Generate pre-signed URLs using S3 console, AWS CLI or SDK
+    URL Expiration
+      - S3 console - 1~720 min (12 hours)
+      - AWS CLI - configure expiratin with --expires-in parameter in sec (default 3600 sec, max 604800sec)
+
+    >> Use cases:
+       allow only logged-in users to download a premium video from you S3 bucket
+       allow an ever-changing list of users to download files by generating URLs dynamically
+       allow temporarily a user to upload a file to a precise location in your S3 bucket
 
 
+  S3 Glacier Vault Lock
+    adopt WORM (Write Once Read Many) model
+    Create a Vault Lock Policy
+    Lock the policy for future edits (no longer be changed or deleted)
+    Helpful for compliance and data retention
+
+  S3 Object Lock (versioning must be enabled)
+    adopt WORM model
+    Block an object deletion for a specificed amount of time
+    modes:
+    - Retention mode - Compliance
+      Object version can't be overwritten or deleted by any user, incl. root
+      Object retentin modes can't be changed, and retention period can't be shortened
+    - Retention mode - Governance:
+      Most users can't overwrite or delete an object vertion or alter its lock settings
+      Some users have special permissions to change the retention or delete the object
+    Retention Period: protect the object for a fixed period, it can be extended
+    Legal Hold:
+      protect the object indefinitely, independent from retention period
+      can be freely placed and removed using the s3:PutObjectLegalHold IAM permission
 
 
+  S3 - Access Points
+    (A solution to group user/access, a layer on top of bucket (bucket policy) that can organize the access control)
+    
+    Access Policy simplify security management for S3 buckets
+    Each access Point has:
+      - its own DNS name (internet origin or VPN origin)
+      - an access point policy (similar to bucket policy) - manage security at scale
+
+    S3 - Access Points - VPC Origin
+      access point only accessible from within the VPC
+      must create a VPC Endpoint (Gateway or Interface Endpoint)
+      the VPC Endpoint Policy must allow access to the target bucket and Access Point
+
+      --------------------------
+      |          VPC           |    Access Point
+      | EC2 --- VPC Endpoint --+-->  VPC Origin  ----> S3 Bucket
+      |      (Endpoint policy) |   (Access Point)   (Bucket Policy)
+      |              |         |      Policy   
+      ---------------+----------
+                     |
+          Policy to allow:
+          - S3 bucket access
+          - Access Endpoint access
 
 
+  S3 Object Lambda
+    Use AWS Lambda Functions to change the obejct before it is retrieved by the caller application
+    Only one s3 bucket is needed, on top of which we can create S3 Access Point and S3 Object Lambda Access Point(s)
 
-
-
-
-
-
-
+         [S3 Bucket]
+              |
+      [S3 Access Point]
+              |
+              |---- Lambda Function 1 ---- [S3 Object Lambda Access Pint] ---- [APP 1]
+              |
+              |---- Lambda Function 2 ---- [S3 Object Lambda Access Pint] ---- [APP 2]
 
 
 
