@@ -1325,12 +1325,12 @@ AWS CloudFront
       The ALB MUST be public, The EC2 instance can be private (behind ALB)
 
 
-  CloudFront Geo Restriction
+  CloudFront Geo Restriction          *
     Restrict who can access the CloudFront distribution.
       AllowList: to allow users from the listed countries
       BlockList: to block users from the listed countries
     The 'country' is determind using a 3rd party Geo-IP database
-    >> Use case: Copyright Laws to control access to the content
+    >> Use case: Copyright Laws to control access to the content      
 
 
   CloudFront - Pricing
@@ -1343,6 +1343,39 @@ AWS CloudFront
       Price Calss 100: only the least expensive regions
 
 
+  AWS Global Accelerator
+    Leverage AWX internal global network to route traffic to application.
+    -- User traffic been directed (via Anycast IP/route) to the nearest Edge Location,
+       then from the Edge location to then ALB then the Application throught AWX global network
+    work with Elastic IP, EC2 instances, ALB, NLB, public or private.
+    consistent performance
+      - intelligent routing to lowest latency and fast failover
+      - No issue with client side cache (IP doesn't change)
+      - use internal AWS network
+    Health Checks
+      - Global Accelerator performs health check to the applications
+      - helps make the application global (failover < 1 min ofor unhealthy)
+      - greate for disaster recovery
+    Security
+      - only 2 external IP need to be whitelisted
+      - DDoS protection (AWS Shield)
+
+
+    Global Accelerator vs CloudFront
+      Same part:
+        - both use AWS global netowrk and its edge locations
+        - both integrate with AWS shield for DDoS
+      differece:
+        CloudFront:
+        - content cache, (content served from the edge)
+        - improve performance for both cacheable content and Dynamic content 
+          e.g API acceleration (cache API result) and site delivery
+        Global Accelerator
+        - No caching (proxy packets at the edge to application in AWS)
+        - improves performance for applications over TCP/UDP
+        - Good for non-HTTP use cases, e.g.  VOIP, gaming, IOT
+        - Good for HTTP use cases that require static IP addresses
+        - Good for HTTP use cases that require deterministic, fast regional failover
 
 
 
