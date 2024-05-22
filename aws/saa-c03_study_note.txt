@@ -1379,6 +1379,146 @@ AWS CloudFront
 
 
 
+/////////////////////////////
+AWS SNOW
+
+  Highly-secure, portable devices to collect and process data at the Edge and migrate data into/out of AWS.
+
+  AWS Snow Family: offline devices to perform data migrations, 
+  if it takes more than a week to transfer over the network, use Snowball devices.
+
+  Data migration: Snowcone, Snowball Edge, Snowmobile
+    For large data migratoin
+  Edge computing: Snowcone, Snowball Edge
+    For the scenario where there is lack of internet access or computing power
+    Can run EC2 Instances & AWS Lambda functions (using AWS IoT greengrass)
+
+
+    Snowcone:   up to 24TB, online or offline (pre-installed DataSync agent)
+    Snowball:   up to PB,  offline
+    Snowmobile: up to EB,  offline
+
+
+    Snowball Edge (for data transfer)
+      Physical data transprt solution.    (large)
+      Pay per data transfer job
+      
+      Storage:
+      - Snowball Edge Storage Optimized: 
+        40 vCPUs, 80G mem 80T HDD 
+        104 vCPUs, 416G mem, 210T NVMe for block volume and S3 compatible object storage
+      - Snowball Edge Compute Optimized: 
+        104 vCPUs, 416G mem
+        42T HDD or 28T NVMe for block volumn and S3 compatible object storage
+      Storage Clustering available (up to 16 nodes)
+      >> Use case:
+        large data cloud migrations
+        DC decommision
+        disaster recovery
+
+    Snowcone & Snowcone SSD
+      Device for edge computing, storage and data transfer.      (Small)
+      Small, portable computing, anywhere, rugged & secure, withstands harsh environments
+
+      2 CPUs, 4G mem, USB-C power or optinal battery
+      - Snowcone: 8T HDD
+      - Snowcone SSD: 14T SSD
+      Must provide your own battery/Cables
+      Can sent back to AWS offline, or connect to internet and use AWS DataSync to send data
+
+      >> Use cases:
+        space contrained environment where Snowball does not fit.
+
+    Snowmobile
+      A Truck
+      Transfer exabytes of data (1EB = 1000PB = 1000000TB)
+
+  Process:
+    Request snowball device
+    Install Snowball client / AWS OpsHub on your servers
+    Connect snowball and copy files
+    Shipback the device
+
+
+  AWS OpsHub
+    a software with UI for Snow Family
+
+
+  Snowball into Glacier
+    Snowball can NOT import to Glacier directly
+    It can go to S3 first, then use S3 Lifecycle Policy to transfer into Glacier
+
+
+
+
+//////////////////////////////////////
+Amazon FSx
+
+    Lauch 3rd party high-performance file system on AWS
+    Fully managed service
+      FSx for Lustre, FSx for NetApp ONTAP, FSx for Windows File Server, FSx for OpenZFS
+    
+
+  FSx for Windows
+    Fully managed Windows FS share drive
+    Support SMB & NTFS
+    Microsoft Active Directory integration, ACL, user quotas
+    Can be mounted on Linux EC2 instances
+    Support Microsoft DFS (Distributed File System) Namespaces -- group files across multiple FS
+    Can be accessed from on-premises infrastructure (VPN or Direct Connect)
+    Can be configured to be Multi-AZ (HA)
+    Data is backed-up daily to S3
+    Scale up to 10s of GB/s,  millions of IOPS,  100s of PB of data
+
+
+  FSx for Lustre
+    Lustre -- (Linux-Cluster)
+    Lustre is a parallel distrubuted FS, for large-scale computing
+    for Machine Learning, HPC (High Performance Computing)
+        Video Processing, Financial Modeling, Electronic Design automation
+    Seamless integration with S3
+      - Can read S3 as file system (through FSx)
+      - Can write the output of the computations back to S3 (through FSx)
+    Can be used from on-premises servers (VPN or Direct Connect)
+    Scales up to 100s GB/s, millions of IOPS, sub-ms latencies
+
+
+  FSx File System Deployment Options
+    Scratch File System
+      - Temp storage
+      - Data is not replicated
+      - High burst (6x Faster, 200MBps per TB)
+      - Usage:  short-tem processing, optimize costs
+    Persistent File System
+      - Long-term storage
+      - Data is replicated within same AZ
+      - Replace failed files within minutes
+      - Usage: long-term processing, sensitive data
+
+
+  FSx for NetApp ONTAP
+    Manged
+    FS compatible with NFS, SMB, iSCSI
+    Move workloads running on ONTAP or NAS to AWS
+    Work with: Linux, Windows, MacOS, VMware Cloud on AWS, Amazon Workspaces & AppStream 2.0, Amazon EC2, ECS and EKS
+    Storage shrinks or grows automatically
+    Snapshots, replication, low-cost, compression and data de-duplication
+    Point-in-time instantaneous cloning (helpful for testing new workloads)
+
+
+  FSx for OpenZFS
+    Compatible with NFS (v3,v4,v4.1,v4.2)
+    Move workloads running on ZFS to AWS
+    Work with: Linux, Windows, MacOS, VMware Cloud on AWS, Amazon Workspaces & AppStream 2.0, Amazon EC2, ECS and EKS
+    Up to 1,000,000 IOPS with < 0.5ms latency
+    Snapshots, compression and low-cost
+    Point-in-time instantaneous cloning (helpful for testing new workloads)
+
+
+
+
+
+
 
 
 
