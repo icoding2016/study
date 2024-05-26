@@ -1828,6 +1828,89 @@ AWS Messaging Services  (DeCoupling applications: SQS, SNS, Kinesis, Active MQ)
 
 
 
+  Kinesis
+    Collect, process, analyze streaming data in real-time
+    Ingest real-time data (e.g. logs, metrics, website clickstreams, IoT telemetry)
+    Kinesis services:
+      Kinesis Data Streams: capture, process and store data stream
+      Kinesis Data Firehose: load data stream into AWS data stores
+      Kinesis Data Analysis: analyze data stream with SQL or Apache Flink
+      Kinesis Video Streams: capture, process, and store video streams    
+
+    Kinesis Data Streams:
+      Shard(s) x n
+      Retention 1~365 days
+      Ability to reprocess (replay) data
+      Immutability: once the data is inserted into Kinesis, it cannot be deleted
+      Shard per partition key. (ordering)
+      Producers: AWS SDK, KPL (Kinesis Producer Library), Kinesis Agent
+      Consumers: Write your own, KCL (Kinesis Client Library), AWS SDK
+                 Managed: AWS Lambda, Kinesis Data Firehose, Kinesis Data Analytics
+
+        Producers -----(records)-----> Kinesis Data Streams -----(Record)-----> Consumer 
+      (App, clients)                       Shard x n                            Apps (KCL,SDK)
+                     Partition Key                            Partiction Key    Lambda
+                     Data Blob (<=1M)                         Sequence number   Kinesis Data Firehose
+                                                              Data Blob         Kinesis Data Analytics
+    Kinesis Data Stream - Capacity Modes
+      Provisioned mode: (manual)
+        Customer choose the number of shards to provision, scale manually or using API
+        Each shard get 1MB/s in (or 1000 records per sec)\
+        Each shard get 2MB/s out (classic or enhanded fan-out consumer)
+        customer pay per shard provisioned per hour
+      On-demand mode: (auto)
+        No need to provision the capacity
+        Default capacity provisioned (4MB/s or 4000 records per second)
+        Scale automatically on observed throughpt peak during last 30 days.
+        Pay per stream per hour & data in/out per GB
+
+    Kinesis Data Streams Security
+      Control access / authorization using IAM policy
+      Encryption in flight using HTTPS endpoint
+      Encryption at rest using KMS
+      Can implement encryption/decryption on client side
+      VPC endpoint available for Kinesis to access within VPC
+      Monitor API calls using CloudTrail
+
+    
+    Kinesis Data Firehose
+      Fully managed servcie, auto scaling, Serverless
+        dest: AWS Redshift/S3/OpenSearch
+              3rd-party partner: Splunk/MongoDB/DatatDog/NewRelic/..
+              Custom: to any HTTP endpoint
+      pay for data going through Firehose
+      Near real-time
+        buffer interval: 0~900 sec
+        buffer size: >= 1MB
+      Support many data format, convesion, transformation, compression
+      Support custom data transfromation using AWS Lambda
+      Can send failed or all data to a backup S3 bucket
+      
+                            Lambda Function (optional)
+                                         |
+      Producers ---(Record)--- [Kinesis Data Firehose] ---(batch write)---> AWS Destination (S3, Redshift, OpenSearch)
+                                         |                                  3rd-party Partner Destination
+                                         |                                  CUstom Destinatino (HTTP Endpoint)
+                          all or failed data --> S3 backup bucket             
+
+
+    Kinesis Data Stream vs Kinesis Data Firehose
+      Stream: process data in real-time.  A customized service.
+      Hose:   load data into AWS/3rd-party for future analysis. A managed service
+
+                Kinesis Data Stream                       Kinesis Data Firehose
+      Usage:  Streaimng service for ingest at scale     Load streaming data into AWS/3rd-party
+      Manage: Custom code (producer/consumer)           Fully managed
+      Realtime: real-time (~200 ms)                     Near real-time
+      Scaling: manage scaling (shard)                   Auto scaling
+      Store:   1~365 days                               No data storage
+      Replay:  support replay capability                No suppoort of replay
+
+
+
+
+
+
 
 
 
