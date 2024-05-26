@@ -1470,7 +1470,6 @@ Amazon FSx
     Data is backed-up daily to S3
     Scale up to 10s of GB/s,  millions of IOPS,  100s of PB of data
 
-
   FSx for Lustre
     Lustre -- (Linux-Cluster)
     Lustre is a parallel distrubuted FS, for large-scale computing
@@ -1481,7 +1480,6 @@ Amazon FSx
       - Can write the output of the computations back to S3 (through FSx)
     Can be used from on-premises servers (VPN or Direct Connect)
     Scales up to 100s GB/s, millions of IOPS, sub-ms latencies
-
 
   FSx File System Deployment Options
     Scratch File System
@@ -1495,7 +1493,6 @@ Amazon FSx
       - Replace failed files within minutes
       - Usage: long-term processing, sensitive data
 
-
   FSx for NetApp ONTAP
     Manged
     FS compatible with NFS, SMB, iSCSI
@@ -1504,7 +1501,6 @@ Amazon FSx
     Storage shrinks or grows automatically
     Snapshots, replication, low-cost, compression and data de-duplication
     Point-in-time instantaneous cloning (helpful for testing new workloads)
-
 
   FSx for OpenZFS
     Compatible with NFS (v3,v4,v4.1,v4.2)
@@ -1515,13 +1511,320 @@ Amazon FSx
     Point-in-time instantaneous cloning (helpful for testing new workloads)
 
 
+  Storage Gateway
+
+    Hybrid Cloud for Storage
+
+      AWS Storage Cloud Native Options
+        Block:  EBS, EC2 Instance Store.
+        File:   EFS, FSx
+        Object: S3, Glacier
+
+    Bridge Between on-premises and cloud
+      Type of Storage Gateway
+        - S3 File Gateway
+        - FSx File Gateway
+        - Volumn Gateway
+        - Tape Gatewy
+    >> Use case
+       disaster recovery
+       backup & restore
+       tiered storage
+       on-premises cache & low-latency file access
+
+    S3 File Gateway
+      
+                  on-premises                     |       AWS Cloud
+      App-server (NFS/SMB) ---[S3 File Gatewy] ---(HTTPS)--- S3 -- Glacier
+
+      Config S3 bucket to be accessible using NFS and SMB
+      Most recently used data is cached in the file Gateway
+      support different types of S3 (Standard, standard IA, one-zone IA, Intelligent Tiering)
+      Transition to S3 Glacier using a lifecycle policy
+      Bucket access using IAM roles for each FIle Gateway
+      SMB has integration with AD (Active Directory) for user authentication
+
+    FSx File Gateway
+      Native access for FSx for Windows Server
+      Local Cache for frequent accessed data
+      Windows compatibility (SMB, AD, NTFS)
+      Useful for group file shares and home directory
+
+    Volume Gateway
+      Block storage using iSCSI backed by S3
+      Backed by EBS snapshot which can help restore on-premises volumes
+      Cached volumes: low latency access to most recent data
+      Stored volume: entire dataset is on premise, scheduled backups to S3
+
+                   On-premises                        |              AWS
+        App Server ---iSCSI ---[Volume Gateway] ---(HTTPS)--- S3  --- EBS snapshot
+
+    Tage Gateway
+      backup using physical tapes
+      VTL (Virtual Tape Library) backed by S3 / Glacier
+      Backup data using existing tape-based processes (and iSCSI interafce)
+      Works with leading backup software vendors
+
+                     On-premises                       |              AWS
+        Backup Server ---iSCSI ---[Tape Gateway] ---(HTTPS)--- S3 Virtual Tape Store --- Glacier
+
+    Storage Gateway - Hardware Appliance
+      Using Storage Gateway means you need on-premises virtualization
+      if no hardware, you can use AWS Storage Gateway Hardware Appliance
+      work with File Gateway, Volumn Gateway, Tape Gateway
+      has the requird CPU, memory, network, SSD cache ...
+
+
+    Storage Gateway Overview
+      Gateway Deployment Options:
+        - VM (VMware, KVM, Hyper-V)
+        - Hardware Appliance
+
+      
+  AWS Transer Family
+    A fully managed service to transfer data in/out AWS S3 or EFS via FTP.
+    Suport:  FTP, FTPS (FTP over SSL), SFTP
+    Managed infrastructure:  Scalable, Reliable, HA (Multi-AZ)
+    Pay per provisioned endpoint per hour + data transfers in GB
+    Store and manage users' credential within the service
+    Intergrate with existing authentication system (Microsoft AD, LDAP, Okta, Amzaon Cognito, custom)
+    >> Usage case:  
+       Sharing files,  Public datasets,  CRM,  ERP
+
+    User (FTP client) --- (Router53) --- [AWS Transfer ] ---- IAM Role --- AWS S3 | EFS
+   
+
+  AWS DataSync
+    Move large amount of data to / from places:
+      On-premises/other cloud to AWS (NFS,SMB, HDFS, S3) -- needs agent
+      AWS to AWS (no need agent)
+    Can synchronize to :  S3/Glacier,  EFS,  FSx
+    Replication tasks can be scheduled hourly/daily/weekly
+    File permissions and metadata are preserved (NFS POSIX SMB)         **
+    One agent task can use 10 Gbp, can setup bandwidth limit
+      
+    
+      NFS/SMB to AWS: 
+      NFS/SMB Server  ---(NFS/SMB)--- [AWS DataSync Agent] ----(TLS)---- [AWS DataSync] ---- AWS Storage Resource
+                                         [AWS Snowcone]  | --------------|                   (S3, EFS, FSx,)
+                                      (agent preinstalled)
+
+      AWS DataSync
+      S3, EFS, FSx -----[AWS DataSync]----- S3, EFS, FSx
+                        (copy metadata)
+
+
+  AWS Transfer Family vs DataSync
+    Transfer Family:
+      Purpose: Transfer files into and out of Amazon S3 using SFTP, FTPS, and FTP protocols.
+      Support protocol:  FTP, FTPS, FSTP
+      Use case: replacing traditional file trnsfer workflows with cloudbased solution
+    DataSync:
+      Purpose: Move large amounts of data online between on-premises storage and AWS services.
+      Supported protocol: DataSync's own optimized protocol
+      Use case: Data migration, data processing, and regular data backup to AWS
+                Transferring data between NFS server, SMB file shares and AWS storage servcies.
+
+
+
+  Storage Comparison
+    S3:               Object storage
+    S3 Glacier:       Object Archival
+    EBS Volume:       Network Storage for one EC2 instance at a time.  (Multi-attach to io1/io2 volume)
+    Instance Store:   Physical storage for EC2 instance (High IOPS)
+    EFS:              Network File System for Linux instance, POSIX filesystem
+    FSx for windows:  Network File System for Windows Servers
+    FSx for Lustre:   High Performance Computing Linux File System
+    FSx for NetApp ONTAP: High OS Compatibility
+    FSx for OpenZFS:  Managed ZFS file system
+    Storage Gateway:  S3/FSx File Gateway, Volume Gateway (cache & store), Tape Gateway
+    Transfer Family:  FTP, FTPS, SFTP interface on top of S3/EFS
+    DataSync:         Scheduled data sync from on-premises->AWS or AWS->AWS
+    Snowcone/Snowball/Snowmobile: to move large amount of data to cloud, physically.  (Snowcore with datasync agent)
+    Database:         for specific workloads, usually with indexing and querying
 
 
 
 
 
+/////////////////////////////////
+AWS Messaging Services  (DeCoupling applications: SQS, SNS, Kinesis, Active MQ)
+
+  Application communication pattern:  Synchronous / Asynchronous
+  
+  AWS Servcies:
+    SQS:     Queue modlel
+    SNS:     pub/sub model
+    Kinesis: real-time streaming model
+  There servcies can scale independently from applications
 
 
+  Amazon SQS
+    Queue
+    Oldest offering (> 10 years)
+    Fully managed servcie, used to decouple applications
+
+    Producer(s) ---(message)---> SQS Queue ---(poll message)---> Consumer
+
+    Attributes:
+      - Unlimited throughput, Unlimited number of messages in Queue
+      - Default retention: 4 days, max 14 days
+      - Low latency (<10ms on publish & receive)
+      - Limitation of 256KB per message sent
+    Can have duplicate messages (at least one delivery, occasionally -- a message may be delivered twice)
+    Can have out of order message (best effort ordering)
+
+    
+    Producing messages:
+      Produce to SQS using the SDK (SendMEssage API)
+      The message is persisted in SQS until a consumer deletes it.
+      Retention: <=14 days. default 4
+      Unimited throughput.
+
+    Consuming messages:
+      Consumer running on EC2 instances, servcers, or AWS Lambda
+      Poll SQS for messages (receive up to 10 messages at a time)
+      Multiple consumers can receive / process messages in parallel
+      at least once delivery
+      best-effort ordering
+      Consumer delete messages after processing
+      Can scale consumers horizontally to improve throughput of processing
+
+    SQS with Auto Scaling Group (ASG)
+      Scale based on CloudWatch Metric -- Queue Length (ApproximateNumberOfMessages)
+
+
+    SQS to decouple between application Tiers
+    requests --> [Front-end web Apps] ---(SendMessage)---> SQS Queue ---(ReceiveMessage)---> [Backend Apps]
+                        x M                                                                      x N (Auto Scaling)
+
+    SQS - Sequrity
+      Encryption:
+        In-flight encryption using HTTPS API
+        At-rest encryption using KMS keys
+        Client-side encryption if the client wants to perform encryption/decryption itself
+
+    SQS - Message Visibility Timeout
+      After a message is polled by a consumer, it becomes invisible to other consumers
+      by default 30 sec
+      means the message has 30 sec to be processed
+      after the message visibility timeout is over, the message is 'visible' in SQS.
+      if a message is not processed winthin the visibility timeout, it will be processed twice.
+        -- consumer can call 'ChangeMessageVisibility' API to get more time for processing
+      if visibility timeout is high (hours) and the consumer crashes, it will take long time to re-processing
+      if visibility timeout is too low, we may get duplicates
+
+    SQS - Long Polling
+      Long Poll: when a consumer requests messages from a queue,
+                 it can optionally 'wait' for message to arrive if there are none in the queue
+      decreases the number of API calls to SQS -> increase the efficiency and latency of the app.
+      he wait time 1~20 sec
+      Long polling is preferable to short polling
+      Long polling can be enabled at the queue level, or at the API level using WaitTimeSeconds
+
+    SQS - FIFO Queue 
+     Limited throughput 300 msg/s without batching, 3000 msg/s with batching
+     Exactly-once send capability (by removing duplicates)
+     Consumer recevie order is guarenteed
+
+     a FIFO queue is named with the end of '.fifo'
+     'content-based duplication' -- 
+
+    SQS with ASG
+      use SQS with Auto Scaling Group (for consyners)
+
+      if the load is too big, some transactions may be lost. to solve it, use SQS as a buffer.
+
+      Request(s) --- Enqueue ---(SendMessage)--- [SQS] ---(ReceiveMessge)--- Dequeue
+                      (ASG)                                                   (ASG)
+
+
+
+  Amazon SNS
+    Simple Notification Service   (Pub/Sub)
+    -- sned one message to many receivers
+
+      Event producer ---- [SNS topic] ----> subscriber(s) x N (max 12.5M)
+
+    The event producer only send event to one SNS topic
+    The event receiver (subscribers) listen to the SNS topic
+    each subscriber to the topic will get all the messages (new feature to filter messages)
+    Up to 12.5 million subscriptions per topic
+    Topic limit: 100000  (0.1M)
+    Subscriber types:  email, SMS, HTTP/HTTPS endpoints, SQS, Lambda, Kinesis Data Firehose
+
+    Many AWS servcies can send messages directly to SNS for notification
+
+    SNS - How to publish
+      Topic Publish (using SDK)
+        - create topic
+        - create subscription(s)
+        - publish to topic
+      Direct Publish (for mobile apps SDK)
+        - create a platform application
+        - create a platform endpoint
+        - publish to the platform endpoint
+        - works with Google GCM, Apple APNS, Amazon ADM
+
+    SNS - Security
+      Encryption:
+        - in-flight encryption using HTTPS API
+        - at-rest encryption using KMS keys
+        - client-side encryption 
+      Access Controls:  
+        IAM policies to regulate access to the SNS API
+      SNS Access Policies 
+        - Useful for cross-account access to SNS topics
+        - Useful for allowing other services (S3, ..) to write to an SNS topic
+
+    SNS - FIFO Topic
+      features:
+        - Ordering by Message Group ID (all messages in the same group are ordered)
+        - Decuplication using Deduplication ID or Content Based Dedeplication
+      Can have SQS Standard and FIFO queue as subscribers
+      Limited throughput (same as SQS FIFO)
+
+
+  SNS + SQS: Fan Out Pattern
+    Push once in SNS, receive in all SQS queues that are subscribers
+    Fully decoupled, no data loss
+    SQS allows data persistence, delayed processing and retries
+    Ability to add more SQS subscribers over time
+    Make sure your SQS queue access policy allows for SNS to write
+    Cross-region Delivery: works with SQS Queues in other regions
+
+
+    event(s) ---> SNS ---(xN) subscriber --- SQS --- service-1
+                                 ...
+                              subscriber --- SQS --- service-n
+
+    >> Use case:
+       Application: S3 Events to multiple queues
+         For the same combination of: Event type (e.g. object create) and prefix (e.g. images/) you can only have One S3 Event rule
+         Id you want to send the same S3 evnet to multiple recievers, use SNS -> SQS Fan Out pattern
+                                          - SNS
+                                         /
+           S3 --- (event) ---> SNS Topic -- SNS
+                                         \
+                                          - SNS
+
+       Application: SNS to S3 through KDF (Kinesis Data Firehose)
+         SNS can send to Kinesis
+
+         Service --- SNS Topic ---> Kinesis Data Firehose ---> S3
+                                                          \--> (Any KDF supported Destination)
+
+
+    SNS FIFO + SQS FIFO: Fan Out
+      In case you need:  Fan Out + Ordering + Deduplication
+
+        Servcie --- SNS FIFO Topic --- SNS FIFO Queue ---> consumer
+                                    \- SNS FIFO Queue ---> consumer
+
+
+    SNS - Message Filtering
+      JSON Policy used to filter messages snet to SNS topic's subscribers
+      if a subscriber doesn't have a filter policy, it receives every message
 
 
 
