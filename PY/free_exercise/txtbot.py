@@ -1,19 +1,14 @@
-"""
-A bot to simulate typing characters into notepad
-
-"""
-
 import pygetwindow as gw
 import pyautogui
 import psutil
 import subprocess 
 import time
 import random
-# from pywinauto.application import Application, ProcessNotFoundError
+import argparse
+from pywinauto.application import Application, ProcessNotFoundError
 from os import path
 from typing import Iterable
 from pprint import pprint
-
 
 
 def rand_char():
@@ -25,7 +20,7 @@ def gen_char(src:Iterable=None, interval:int=-1, repeat:bool=True):
     """ generate char per src or randomly (if no src)
 
         if interval < 0, then use random interval 
-          interval: -1, (0.1~1)
+          interval: -1, (0.05~0.5)
                     -2, (0.5~5)
                     other -n, (2-20)
         if src provided then generate char from src
@@ -67,11 +62,18 @@ def get_window(title:str, exact_match=True):
     return gw.getWindowsWithTitle(title)
     
 def txtbot(timeout:int=0, src:Iterable=None):
+    """simulate text input to notepad
+
+    Args:
+        timeout (int, optional): the life time of the bot. Defaults to 0 (no kill).
+        src (Iterable, optional): the src of input data. Defaults to None (random).
+
+    Raises:
+        Exception: _description_
+    """
     app_name:str='notepad.exe'
     win_title:str='Untitled - Notepad'
     new_title = '# bnote'
-    src_file = __file__
-    app = None
     proc = None
 
     for p in psutil.process_iter(['name']):
@@ -93,10 +95,7 @@ def txtbot(timeout:int=0, src:Iterable=None):
     start_time = time.time()
     wins = get_window(win_title, exact_match=True)
     wins[0].activate()
-    pyautogui.write(f'{new_title}\n', interval=0.05)
-    src = ''
-    with open(path.abspath(src_file), 'r') as f:
-        src = f.read()
+    pyautogui.write(f'{new_title}\n\n', interval=0.05)
     for c in gen_char(src=src, interval=-1):
         if time.time() - start_time > timeout:
             break
@@ -104,35 +103,36 @@ def txtbot(timeout:int=0, src:Iterable=None):
         wins[0].activate()
         pyautogui.write(c)
 
-    # try:
-    #     try:
-    #         app = Application().connect(path=app_name)
-    #     except ProcessNotFoundError:
-    #         app = Application().start(app_name)
-    #         time.sleep(2)
-    #     status = app.is_process_running()
-    #     print(f"app status: {status}")
-    #     print(f"app windows: {[w.window_text() for w in app.windows()]}")
-    #     main_window = app.window(title=win_title)
-    #     # main_window.wait('ready', timeout=10)
-    #     print(main_window.window_text())
-    #     start_time = time.time()
-    #     for c in gen_char(interval=5):
-    #         if time.time() - start_time > timeout:
-    #             break
-    #         main_window.set_focus()
-    #         main_window.type_keys(c)
-    # except Exception as e:
-    #     print(e)
-    #     raise e
 
-    
-
-
-def debug():
+def run():
     # windows = get_window('');    pprint([w.title for w in windows])
-    txtbot(timeout=600)
+    src = None
+    with open(path.abspath(__file__), 'r') as f:
+        src = f.read()
+    txtbot(timeout=20000, src=src)
 
 
-debug()
+def app():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-l', '--lifetime', type=int, default=0, required=False)
+    parser.add_argument('-f', '--file_name', type=str, default=None, required=False)
+    args = parser.parse_args()
+
+    timeout = args.lifetime
+    src_file = args.file_name
+    src = None
+    if src_file:
+        fn = path.realpath(src_file)
+        with open(fn, 'r') as f:
+            src = f.read()
+    txtbot(timeout, src)
+
+
+
+if __name__ == '__main__':
+    # run()
+    app()
+
+
 
