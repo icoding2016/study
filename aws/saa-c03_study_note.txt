@@ -1662,7 +1662,8 @@ AWS Messaging Services  (DeCoupling applications: SQS, SNS, Kinesis, Active MQ)
   Amazon SQS
     Queue
     Oldest offering (> 10 years)
-    Fully managed servcie, used to decouple applications
+    Fully managed servcie, used to decouple applications. 
+      e.g. auto scale by default
 
     Producer(s) ---(message)---> SQS Queue ---(poll message)---> Consumer
 
@@ -1852,6 +1853,12 @@ AWS Messaging Services  (DeCoupling applications: SQS, SNS, Kinesis, Active MQ)
                      Partition Key                            Partiction Key    Lambda
                      Data Blob (<=1M)                         Sequence number   Kinesis Data Firehose
                                                               Data Blob         Kinesis Data Analytics
+      
+      >> The capacity limits of a Kinesis data stream are defined by the number of shards within the data stream.
+         The limits can be exceeded by either data throughput or the number of reading data calls. 
+         Each shard allows for 1 MB/s incoming data and 2 MB/s outgoing data. 
+         You should increase the number of shards within your data stream to provide enough capacity.
+
     Kinesis Data Stream - Capacity Modes
       Provisioned mode: (manual)
         Customer choose the number of shards to provision, scale manually or using API
@@ -1905,6 +1912,303 @@ AWS Messaging Services  (DeCoupling applications: SQS, SNS, Kinesis, Active MQ)
       Scaling: manage scaling (shard)                   Auto scaling
       Store:   1~365 days                               No data storage
       Replay:  support replay capability                No suppoort of replay
+
+
+    Kinesis Data Analytics    
+
+
+
+
+    Ordering data into Kinesis
+      -- Partition Key
+      the same key will always go to the same shard
+
+    Ordering data into SQS
+      For SQS Standard, there is no ordering
+      For SQS FIFO, if not using Group ID, emssages are consumed in the order they are sent.
+      Using GroupID, the consumer can read by Group
+ 
+    Kinesis vs SQS ordering
+      say 100 trucks (partition or group ID), 5 kinesis shards, 1 SQS FIFO
+      Kinesis Data Streams:
+        20 trucks per shard, ordered in each shard
+        max consumers in parallel: 5
+        receive up to 5 MB/s of data
+      SQS FIFO:
+        one FIFO queue
+        100 group ID
+        up to 100 consumers
+        up to 300 message/sec (or 3000/s if using batching)
+
+
+  SQS vs SNS vs Kinesis          *
+    SQS:     
+             Pull data
+             any number of workers (consumers) 
+             data deleted after being consumed (retention 1~14 days)
+             no need to provision throughput
+             order gurarantees only on FIFO queues
+    SNS:     
+             Push data, Pub/sub
+             up to 12.5 million subscribers, up to 100k topics
+             data not persisted (lost if not delivered)
+             no need to provision throughput
+             FIFO cpability for SQS FIFO
+             1:M, integrates with SQS for fan-out architecture pattern
+    Kinesis: 
+             Pull (standard) or Push (Enhanced-fan out) data
+             up to 20 consumers per stream (enhanced fan-out limit)
+             Possibility to repay data (retention 1~365 days)
+             both 'provisioned mode' or 'on-demand capacity' mode
+             order at the shard level
+             for real-time big data, analytics and ETL
+
+
+  Amazon MQ
+    Amazon MQ is a managed message broker service for RabbitMQ, ActiveMQ
+      SQS, SNS are cloud-native servcies, prioprietary from AWS
+      traditional applications from on-premises may use open protocols like MQT, AMQP, STOMP, Openwire, WSS
+      Amazon MQ helps to adapt open MQ services to Amazon cloud
+    
+    Amazon MQ doesn't scale as much as SQS/SNS
+    Amazon MQ runs on servers, can run in Multi-AZ with failover
+    Amazon MQ has both Queue (like SQS) and Topic feature (like SNS)
+
+    Amazon MQ - HA
+      Amazon MQ brokers in active and standby AZs
+                Zone 1                     Zone 2
+                Active                     Standby
+              MQ Broker                   MQ Broker
+                  |                           |
+                  ----------- EFS -------------
+
+
+
+
+//////////////////////////////////
+AWS Containers (ECS, Fargate, ECR)
+
+  ECS:  Elastic Container Service
+  ECR:  Elastic Container Repository
+  EKS:  Elastic Kubernetes Service
+  Fargate: Amazon's Serverless container platform, works with ECS and EKS
+
+
+  Amazon ECS -Launch Type
+    EC2 Lauch Type 
+      Lauch Docker containers on AWS == Launch ECS Tasks on ECS clusters
+      Must provision & maintain the infrastructure (EC2 instances)
+      Each EC2 instance must run the ECS Agent to regiester in the ECS Cluster
+      AWS takes care of the starting/stopping containers
+    Fargate Lauch Type
+      Serverless
+      No provision the infrastructure (No EC2 instances to manage)
+      AWS just runs ECS tasks for you based on CPU/RAM requirement
+      To scale, just increase the number of the tasks.
+
+  ECS - IAM Roles for ECS
+    EC2 Instance Profile (EC2 lauch type only)
+      Used by ECS agent
+      ECS agent make API calls to ECS service
+      Send container logs to CloudWatch logs
+      Pull docker image from ECR
+      Reference sensitive data in Secrets Manager or SSM parameter store.
+    ECS Task Role:
+      Allows each task to have a specific role
+      Use different roles for different ECS servcies
+      Task role is defined in task definition
+
+  ECS - Load Balancer integration
+    ALB, for most use cases
+    NLB, for high throughput/performance
+                                          ECS Cluster
+    users ---(http/https)---ALB ---- ECS Tasks on ECS Instances
+                                \--- ECS Tasks on ECS Instances
+
+  ECS - Data Volumes (EFS)
+    Mount EFS onto ECS tasks.    (S3 cannot be mounted as a file system)
+    Work for both EC2 and Fargate lauch types
+    Task running in any AZ share the same data on EFS
+    Fargate + EFS = Serverless    (both Fargate and EFS are serverless)
+    >> Use case:
+      persistent multi-AZ shared storage for containers
+
+
+  ECS -- Service Auto Scaling
+    Auto increase/decrease ECS tasks
+    ECS Auto Scaling uses AWS Application Auto Scaling
+      by Metrics:
+        - Average CPU Utilization
+        - Average Memory Utilization
+        - ALB Request Count per target
+    
+    Scale based on:
+      Target Tracking -- target value for a specific CloudWatch metrics
+      Step Scaling    -- a specified CloudWatch Alarm
+      Scheduled Scaling -- based on date/time
+
+    ECS Servcie Auto Scaling (task level) != EC2 Auto Scaloing (EC2 instance level)
+    Fargat Auto Scaling is much easier to setup.
+
+  EC2 Lauch Type - Auto Scaling EC2 Instances
+    Approaches:
+      - Accommodate ECS Services Scaling by adding underlying EC2 Instances
+      - ASG (Auto Scaling Group) Scaling
+        Scale ASG based on CPU Utilization
+        Add EC2 instances over time
+      - ECS Cluster Capacity Provider
+        Auto provision and scale the infrastructure for ECS tasks
+        Capacity Provider paired with ASG
+        Add EC2 instances when missing capacity (CPU, RAM,...)
+
+
+ >> Use cases
+    ESC tasks invoked by Event Bridge
+                                                    [AWS Fargate]
+      Client ---> S3 ---(event)---> EventBridge ---(Rule: ECS Task)---> ECS task
+                  ^                                        | |
+                  ----------------(get object)-------------| |---(save result)---> DynamoDB
+
+
+    ECS tasks invoked by Event Bridge Schedule
+                                                         [AWS Fargate]
+      [Event Bridge] ---(scheduled rule: Run ECS task)---> ECS Tasks ---(batch processing)---> S3
+
+    ECS - SQS Queue
+                                           [ECS] 
+                                      |--> Task1
+       Messages ---> SQS ---(poll msg)---> ...
+                                      |--> Taskn
+                                  (ECS Service Auto Scaling)
+
+
+  >> Use case
+     You have an application hosted on an ECS Cluster (EC2 Launch Type) where you want your
+     ECS tasks to upload files to an S3 bucket. Which IAM Role for your ECS Tasks should you modify?
+     --> ECS Task Role
+  >> Use case
+     You are deploying an application on an ECS Cluster made of EC2 instances.
+     Currently, the cluster is hosting one application that is issuing API calls to DynamoDB successfully.
+     Upon adding a second application, which issues API calls to S3, you are getting authorization issues.
+     What should you do to resolve the problem and ensure proper security?
+     --> Create an IAM task role for the new application
+        other inproper solutions
+        > Edit EC2 instance role to add permission to S3 -- would allow the 1st app to access S3 as well (security risk)
+        > Edit S3 bucket policy to allow the EC2 task -- would allow the 1st app to access S3 as well
+  
+
+  ECR (Elastic Container Registry)
+    Store and manage DOcker images on AWS
+    Public and Private repo. 
+      Amazon ECR (Private)
+      Amazon ECR Public    (Public Gallery https://gallery.ecr.aws)
+    Fully integrated with ECS, backed by S3
+    Access controlled through IAM.  (permission errors means policy issue)
+    Supports image vulnerabiity scan, versioning, tags, lifecycle
+
+
+
+  Amazon EKS
+    Elastic Kubernetes Service
+    managed Kubernetes Clusters on AWS
+    EKS supports 2 modes:
+      EC2 (deply worker modes)
+      Fargat (deploy serverless containers)
+    K8s is cloud-agnostic. 
+    >> Use case:
+       migrate company's on-premises K8s to AWS.
+
+    
+    EKS - Node types
+      Managed Node Groups
+        - EKS manage nodes (EC2 instance) for you
+        - Nodes are part of an ASG managed by EKS
+        - Support on-demand or spot instances
+      Self-managed nodes
+        - self created node and registered to the EKS cluster and managed by an ASG
+        - can use prebuilt AMI - Amazon EKS Optimized AMI
+        - Support on-demand or spot instances
+      AWS Fargate 
+        - No maintenace required; no nodes managed
+
+    EKS - Data Volumes
+      Need to specify StorageClass manifest on EKS cluster
+      Leverages CSI (Container Storage Interface) compliant driver
+      Support:
+        EBS
+        EFS (works with Fargate)
+        FSx for Lustre
+        FSx for NetApp ONTAP
+
+
+  AWS App Runner
+    Fully manged servcie to deploy web application and APIs at scale
+    No infrastructure exprience required
+    Start with your source code or container image
+        source code or docker image ---> Configure Settings (vCPU, RAM, ASG, Health check) ---> Create & Deploy.
+    Automaticlly builds and deploy the web app
+    Auto scaling, HA, LB, encryption
+    VPC access support
+    connect to database, cache, message queue
+    >> Use cases
+       web apps,  APIs,  microservices,  repid production deployments
+
+
+
+
+//////////////////////////////////////////
+AWS Serverless
+  'serverless' --  developers don't have to manage servers
+                   instead they just depoly code, functions
+  
+  initially, serverless == FaaS (Function as a Service) -- AWS Lambda
+  now also includes anything that's managed:  DBs, messaging, storage, etc.
+
+  Related components: 
+    S3, API Gateway, Cognito, Lambda, DynamoDB, SNS & SQS, Kinesis Data Firehose, Aurora Serverless, Step Functions, Fargate
+
+
+
+  AWS Lambda
+    Virtual function (no servers to manage)
+    Limited by time (short execution)
+    Run on-demand
+    scaling is automated
+
+    Benefits:
+      Pricing:  pay per request and compute time
+                Free tier of 1M AWS Lambda requests and 400k GB of compute time
+                very cheep to run AWS lambda
+      Integrated with the whole ASW suite of services
+      Integrated with many programming languages
+      Easy monitoring through CloudWatch
+      Easy to get more resource per functions (up to 10 GB of RAM)
+      Increasing RAM also improve CPOU and network
+
+    AWS Lambda language support:
+      Node.js, Python, Java, C#, Golang, Ruby, Custom Runtime API (e.g. Rust)
+
+    Lambda Container image
+      The container image must implement the Lambda Runtime API
+      ECS/Fargate is preferred for running arbitray docker images
+
+
+    Lambda integrations
+      API Gateway, Kinesis, DynamoDB, S3, CloudFront, CloudWatch Events Bridge, CloudWatch log, SNS, SQS, Cognito
+
+    >> Use case:
+       Serverless CRON:
+         CloudWatch EventBridge ---(Trigger per hour)---> Lambda Function perform a task
+
+
+
+
+
+
+
+
+
+
 
 
 
