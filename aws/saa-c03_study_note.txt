@@ -1740,6 +1740,20 @@ AWS Messaging Services  (DeCoupling applications: SQS, SNS, Kinesis, Active MQ)
                       (ASG)                                                   (ASG)
 
 
+    >> Use case                                            **
+      You have configued a Lambda function to run each time an item is added to a DynamoDB table using DynamoDB Streams.
+      The function is meant to insert messagte into the SQS queue for further long processing job.
+      Each time the Lambda function is invoked and able to read from the DynamoDB Stream,
+      but it isn't able to insert the message into the SQS Queue.
+      What is the problem?
+        a. The SQS Security group must be edited to allow AWS Lambda
+        b. The Lambda security group must allow outbound access to SQS
+        c. The Lambda Execution IAM role is missing permissions.
+      explain:
+      - Security Group cannot be attached to SQS queues
+      - Security Group cannot poiont to SQS queues
+      so c is correct
+
 
   Amazon SNS
     Simple Notification Service   (Pub/Sub)
@@ -2203,7 +2217,7 @@ AWS Serverless
   AWS Lambda Limits:
     Execution:
       - Memory allocation: 128MB~10GB
-      - Max execution time: 900s (15 min)
+      - Max execution time: 900s (15 min)         *
       - Environment variables (4KB)
       - Disk capacity in the 'function container' (in /tmp): 512MB~10GB
       - Concurrency executions: 1000 (can be increased)
@@ -2336,13 +2350,679 @@ AWS Serverless
       Each table has a primary Key (must decide at creation time)
       Each table has infinit number of items (rows)
       Each item (row) has attibutes (can be added over time, can be null)
-      Max item size: 400kGBs
+      Max item size: 400kBs         *
       Supported data type:
         - Scalar Type: (string, number, binary, bool, null)
         - Document Type: List, map
         - Set Type: String set, Number set, Binary set
       in DynamoDB, you can rapidly evolve schemas           **
       
+      Primary Key:  Partition Key + Sort Key （optional）
+
+      Read/Write Capacity Modes:
+      - Provisioned Mode (default)
+        Specify the number of reads/write per sec
+        plan capacity before hand
+        Pay for provisioned Read Capacity Units (RCU) & Write Capacity Units (WCU)
+        Possibility to add auto-scaing mode for RCU & WCU
+        RCU and WCU are decoupled, so you can increase/decrease each value separately.
+      - On-Demand Mode
+        Read/write automaticlly scale up/down with workloads
+        No capacity planning needed
+        Pay for what you use, more expensive
+        Great for unpredictable workloads, steep sudden spikes
+
+    DynamoDB Accelerator (DAX)
+      Fully managed, HA, seamless in-memory cache for DynamoDB
+      solve read congestion by caching
+      ms latency for cached data
+      no require application logic (compatible with DynamoDB API)
+      TTL defaut 5min (configurable)
+
+    DynamoDB Accelerator (DAX) vs ElasticCache
+      ElasticCache:  Store Aggregation result
+      DAX:           Individual Objects cache;  Query & Scan cache
+
+      DynamoDB Accelerator delivers up to 10x performance improvement. thus offloading the heavy reads on hot keys off your DynamoDB table,
+        hence preventing the "ProvisionedThroughputExceededException" exception. 
+
+    DnyamoDB - Stream Processing
+      Oredered stream of item-level modification (CRUD) in table
+      Use cases:
+        React to changes in realtime (welcome email to users)
+        Real-time usage analytics
+        Insert into derivative Tables
+        Implement cross-region replication
+        Invoke Lambada on changes to DynamoDB table
+
+        DynamoDB Streams            vs         Kinesis Data Stream (newer)
+      ----------------------------------------------------------------------
+      24 hour retension                        1 Year retension
+      Limited # of consumers                   High # of consumers 
+      Process using AWS Lambda Triggers        Process using AWS Lambda, Kinesis Data Analytics, Firehose, Glue Streaming ETL...
+        or DynamoDB Stream Kinesis Adapter
+
+    DynamoDB - Global Table
+      Make a DynamoDB table accessible with Low Latency in multiple-Regions
+      Active-Active repliction (2-way replication between multiple regions)
+      Application can read/write table in any region
+      Must enable DynamoDB Streams as a pre-requisite      *
+       -> DynamoDB Streams enable DynamoDB to get a changelog and use it to replicate data across replica tables in other AWS Regions.
+
+
+    DynamoDB - TTL (Time To Live)
+      Auto delete item after an expiry timestamp
+      >> Use case:
+         reduce stored data by keeping only the current items, 
+         adhere to regulatory obligations,
+         web session handling
+
+    DynamoDB - Backup for disaster recovery
+      Condintuous backups using point-in-time recovery (PITR)
+        optionally enabled for the last 35 days
+        point-in-time recovery at any time within the backup window
+        the recovery process create a new table
+      On-demand backups
+        Fully backup for long-term retention, until explicitely delete
+        Doesn't affect performance or latency
+        Can be configured and managed in AWS Backup (enable cross-region copy)
+        The recovery process creates a new table
+
+    DynamoDB - Integration with S3
+      Export to S3 (must enable PITR)
+        works for any point of time in the last 35 days
+        doesn't affect the read capacity
+        perform data analysis on top of DynamoDB
+        Retain snapshots for auditing
+        ETL (extract, transform, load) on top of S3 data before importing back into DynamoDB
+        export in DynamoDB JSON or ION format
+      Import from S3
+        Import CSV, DynamoDB JSON or ION format
+        Doesn't consume any write capacity
+        create new table
+        import error are logged in CloudWatch logs
+
+    Solution with DynamoDB
+      Client  --(REST API)-- API Gateway --(PROXY REQUESTS)-- Lambda --(CRUD)-- DynamoDB
+
+
+
+  AWS API Gateway
+    AWS Lambda + API Gateway: No Infrastructure to manage
+    Support websocket protocol
+    handle API versioning
+    handle different environmenbts (dev, test, prod)
+    handle security (authentication & authorization)
+    Create API keys, handle request throttling
+    Swagger/Open API import to quickly define APIs
+    Transform and validate requests and responses
+    Generate SDK and API specifications
+    Cache API Responses
+
+    API Gateway - Integratin High Level
+      Lambda Function
+        Invoke lambda function
+        Easy way to expose REST API backed by AWS Lambda
+      HTTP
+        Expose HTTP endpoints in the backend
+        e.g.
+          Internal HTTP API on premise, ALB.  
+          (On the API GW, add rate limiting, caching, auth, API keys, etc)
+      AWS Service
+        Expose any AWS API throught the API Gateway
+        e.g.
+          start and AWS Step Function workflow, post a messge to SQS.
+          (The API GW add authentication, rate control, deploy publicly, )
+
+      API Gateway - AWS Service Ingegration
+        e.g
+        Client --http-- API Gateway ---- Kinesis Data Streams --(record)-- Kinesis Data Firehose --(store .json)-- S3
+
+    API Gateway - Endpoint types
+      Edge-Optimized (default): for global clients
+        Requests are routed through ClientFront Edge location s
+        The API Gateway still lives in only one region
+      Regional:
+        For clients within the same region
+        Could manually combine with CloudFront (more control over caching strategies and distribution)
+      Private:
+        Can only be accessed from VPC using an interface VPC Endpoint (ENI)
+        Use resource policy to define access
+
+    API Gateway - Security
+      User Authentication through
+        - IAM Role (useful for internal applications)
+        - Cognito (for extermal user, e.g. mobile users)
+        - Custom Authorizer (your own logic, and Lambda function)
+      Custom Domain Name HTTPS security throught integration with ACM (AWS Certificate Manager)
+        if using Edge-Optimized endpoint, the certificate must be in us-east-1
+        if using Regional endpoint, the certificate must be in the API Gateway region
+        Must setup CNAME or A-alias record in Route53
+
+    AWS Step Functions (a visual design tool)
+      Build serverless visual workflow to orchestrate Lambda functions
+      Features: sequence, parallel, conditions, timeout, error handling, etc
+      Can integrate with EC2, ECS, API Gateway, SQS, etc
+      Possibility of implementing human approval feature
+      >> Use cases
+         order fullfillment, data processing, web application, any workflow
+
+  Amazon Cognito
+    Give users an identity to interact with web or mobile application
+    Cognito User Pools:
+      Sign in function for app users
+      Integrate with API Gateway & ALB
+    Cognito Identify Pools (Federated Identity)
+      Provide AWS credentials to users so they can access AWS resources directly
+      Integrate with Cognito User Pools and an identity provider
+    Cognito vs IAM:
+      Cognito - hundreds of users, mobile users, authenticate with SAML
+
+
+    Cognito User Pools (CUP) -- User Features
+      Create a serverless database of ser for your web & mobile apps
+      Simple login: username/email / password combination
+      Password rest
+      Email & Phone verification
+      Multi-factor authentication (MFA)
+      Federated Identifies: user from Facebook, Google, SAML
+
+    Cognito Identity Pools (Federated Identities)
+      Get idnetities for 'users' so they obtain temporary AWS credentials.
+      Users source can be Cognito User Pools, 3rd party logins, etc..
+
+      User can access AWS services directly or through API Gateway
+      The IAM policies applied to the credentials are defined Cognito
+      Can be customized based on the user_id for the grained control
+      Default IAM roles for authenctate and guest users
+
+
+        Web/Mobile App ----------(login & get token)----------- 3rd Party (Google/FB/SAML/etc)
+              |        \                                                                ^
+              |         \---(exchange token for--- Cognito Identity Pools ---validate --| 
+              |             tepm AWS credential)
+        (direct access)
+              |__AWS S3/DynamoDB etc
+
+
+
+
+///////////////////////////////////////
+Serverless Solution Architecture
+
+  #
+  e.g. Mobile APP for TODO-list, 
+    requirements:
+    - REST API with HTTPS
+    - Serverless architecutre
+    - user can directly interact with their own folder in s3 
+    - user authenticate through a managed serverless service
+    - user can read/write to-do, but mostly read
+    - the database should scale, and have some high read througput
+
+              Amazon Cognito
+            / (auth)    | (verify auth)
+           /            |
+    Client --(REST)-- API Gateway ---- Lambda ---- DAX ---- DynamoDB
+           \           (cache)                   (cache)
+            \ S3
+
+  #
+  e.g Serverless Website: my-blog.com
+    requirements:
+    - scale globally
+    - blogs are rarely written, but often read
+    - some websites are purely static files, the rest are dynamic REST API
+    - Caching must be implemented where possible
+    - Any new user subscribes should receive a welcome email
+    - Any photo uploaded to the blog should have a thumbnail generated
+
+                            (Origin Access Control)
+                                    OAC         upload             thumbnail
+                CloudFront (Global) ------ S3 --(trigger) ---- Lambda ---- S3 --- SNS
+  upload photos/ (Transfer acceleration)                                      \-- SQS
+              /            
+        Client --(REST)-- API Gateway ---- Lambda ---- DAX ---- DynamoDB
+                           (cache)                   (cache)       |           new user
+                                                            DynamoDB_Streams --(trigger)-- Lambda --- SES (EmailService)
+              
+    Use S3 + CloudFront for Static web content
+    The REST API is serverless, no need Cognito becuase it is public
+    Use OAC to control the user access to S3, S3 setup bucket policy to only authrize from CloudFront Distribution
+    Use DynamoDB (Could also be Aurora Global DB)
+    Use DynamoDB Streams + Lambda to trigger new user emails (SES: Simple EMail Service in serverless way)
+
+  # 
+  Micro Service Architecture
+    Synchronous Patterns:
+      API Gateway,  Load Balancers
+    Asynchronous Patterns:
+      SQS, Kinesis, SNS, Lambda triggers (S3)
+  
+  # 
+  Software updates offloading
+    -- CloudFront
+
+
+
+
+
+////////////////////////////////////////
+Databases
+
+  Database Types:
+    RDBMS (SQL/OLTP):  RDS, Aurora
+    NoSQL:  DynamoDB, ElasticCache, Neptune, DocumentDB, Keyspace,...
+    Object Store:  S3/Glacier
+    Data Warehourse (SQL Analytics/BI):  Redshift (OLAP), Athena, EMR
+    Search:  OpenSearch (JSON)
+    Graphs:  Amazon Neptune
+    Ledger:  Amazon Quantum Ledger Database (QLD)
+    Time servcies: Amazon Timestream
+
+
+  Amazon RDS
+    Managed PostgresQ/MySQL/SQL Server/Oracle/DB2/Custom
+
+  Amazon Aurora
+    Compatible API for PostgresQ/MySQL, separation of storage and compute
+    HA (6 Replica/3 AZ), Auto-scaling, self-healing.
+    Aurora serverless
+    Aurora Global  (~16 Read instance/region)
+    Aurora Database Clone
+    Aurora Machine Learning
+
+  Amazon Elastic Cache
+    Managed Redis/Memcached
+    Requires some application code changes to be leveraged
+
+  Amazon DynamoDB
+    Managed Serverless NoSQL,  (table)
+    Capacity mode: Provisioned / on-demand
+    DynamoDB Streams, (Event processing)
+    DAX  read cache (ms read latency)
+    Global Table (Active-Active)
+    Repidly evolve schemas
+
+  Amazon DocumentDB
+    Fully managed native JSON document DB with MongoDB compatibility.
+    ('an AWS implimentation of MongoDB')
+    HA with replications across 3 AZ
+    DocumentDB storage automatically grows in increments of 10GB
+    Auto scales to workloads with millions of RPS.
+    DocumentDB does NOT have a Serverless option           *
+
+  Amazon Neptune
+    Fully managed graph database
+    HA across 3 AZ up to 15 read replicas
+    Can store up to billions of relations and query the graph with ms latency
+    >> Use Case
+       Social network, knowledge graphs (Wikipedia), fraud detection, recommendation engines
+
+    Amazon Neptune - Streams
+      Real-time ordered sequence of every change to your graph data
+      No duplication, strict order
+      Changes are available immediately after writing
+      Streams data is accessible in HTTP REST API
+      >> Use case:
+         Send notification when certain changes are made
+         mainain graph data synchronized in another data store (S3, OpenSearch, ElastiCache)
+         Replicate data across regions in Neptune
+
+  Amazon Keyspaces (for Apache Cassandra)
+    A fully managed Apache Cassandra-compatible DB service
+    Serverless, Scalable, HA, 
+    Auto scale tables up/down based on the application's traffic
+    Tables are replicated 3 times across multiple AZ
+    Using Cassandra Query Language (CQL)
+    n ms latency at any scale, 1k RPS
+    Capacity mode:  provisioned with auto-scaling / on-demand
+    Encryption, backup, PITR (Point-in-time Recovery) up to 35 days
+    >> User case:
+       store IoT devcies info, 
+       time-series data
+
+  Amazon QLDB (Quantum Ledger Database)
+    ledger -- recording financial transactions
+    Fully managed, Serverless, HA, Replication across 3 AZ
+    Immutable system. no entry canb e removed or modified, cryptographically verifiable
+    2-3x better performance than common ledger blockchain framework, manipulate data using SQL
+    Used to review histroy of all the changes made to your applicatin data over time
+    vs Amazon Blockchain: no decentralization components
+
+  Amazon Timestream
+    Fully managed, scalable, serverless time series DB.
+    Auto Scale up/down to adjust capacity
+    Store and analyze trillions of events per days
+    1000s times faster and 1/10 the cost of RDS
+    Scheduled queries, multi-measure records, SQL compatibility
+    Data storage tiering: recent data in memory, histyorical data in cost-optimized storage
+    Built-in time series analytics functions (identify patterns in data in near real-time)
+    Encryption in transit and at rest
+    >> Use case:
+       IoT app, operatinal app, real-time analysitcs
+
+    Architecture:
+      AWS IOT          ------------------------------->                              Amazon QuickSight
+      Kinesis Data Stream ---->        Lambda     ---->                            / Amazon SageMaker
+                          \__ Kinesis Data Analysics-->  --> Amazon Timestream ---|  Grafana
+               Amazon MSK /                                                        \ Any JDBC connection
+      Prometheus       ------------------------------->
+      telegraf         ------------------------------->
+
+
+
+
+//////////////////////////////////////////////////
+Data Analytics
+
+
+  Amazon Athena
+    Serverless query (SQL) service to analyze data store in S3
+    ----------        ----                                  ---
+    Use SQL to query the files (built on Presto -- OpenSource SQL Query Engine)
+    Supports CSV, JSON, ORC, AVro, Parquet
+    Pricing:  $5/TB data scanned
+    Conmmonly used with Amazon Quicksight for reporting/dashboards
+
+    load data ---> S3 --(Query&Analyze)--> Amazon Athena --(dashboard)--> QuickSight
+
+    >> Use Case:
+       Business intelligence /analytics / reporting
+       analyze & query VPC flow logs, ELB logs, CloudTrail trails
+
+    Athena - Performance improvement
+      Use columnar data for cost-saving
+        Apache Parquet or ORC is Recommended
+        Use Glue to convert data to Parquet or ORC
+      Compress data
+      Partition datasets in S3 for easy querying on virtual columns
+        e.g.  s3://bucket/path-to-table/<partition_column_1>=<value1>/<partition_column_2>=<value2>/...
+      Use larger files (>128M) to minimize overhead
+
+    Athena - Federated Query
+      Run SQL queries across data stored in relational, non-relational object and custom data sources (AWS/on-premises)
+      Use data source connectors that run on Lambda to run Federated Queries.
+      Store the result back in S3
+                                            / DynamoDB / DocumentDB / Aurora / ElastiCach / RDS / Redshift
+      S3 --- Amazon Athena --- Lambda ------   Database on-premises
+                    (data srouce connector) \ HBase in EMR
+
+
+  RedShift
+    OLAP (Online Analytical Processing), for analytics and data warehousing
+    based on PostgreSQL, but not used for OLTP (Online Transaction Processing)
+    10x better performance than other data warehouses, scale to PBs of data
+    Columnar storage of data (instead of row based) & parallel query engine
+    Pay as you go based on the instances provisioned
+    Has a SQL interface for performing the query
+    BI tools such as Amazon QuickSight or Tableau integrate with it
+    vs Athena:  Redshift support indexs -> faster queries / joins / aggregations
+
+    Redshift Cluster:
+      Leader node
+      Compute node
+      Provision node size in advanced
+      can use reserved instances for cost saving.
+
+      Query --(JDBC/ODBC)-- Redshift Cluster
+                              Leader Node
+                            Compute-node x m
+
+
+    Redshift - Snapshots & DR
+      Redshift has multi-AZ mode for some cluster
+      Snapshots are PIT (point-in-time) backups of a cluster, stored internally in S3
+      Snapshots are incremental (only save chagnes)
+      You can restore a snapshot into a new cluster
+      Automated: every 8 hours, every 5GB, or on schedule, set retention
+      Manual:    snapshot is retained until you delete it
+
+      You can configure Redshift to automatically copy snapshots (automated or manual) of a cluster to another region
+
+      [Region 1] Redshift Cluster (original) --(snapshot)--> Cluster Snapshot
+                                                                |(auto/manual copy)
+      [Region 2] Redshift Cluster (new) <-------(restore)-------
+
+
+    Loading data into Redshift:  (Large inserts are Much better)
+      - Kinesis Data Firehose
+        Kinesis Data Firehose ---> Redshift (through S3 copy)
+      - S3 copy
+                      (internet)
+        S3 Bucket  ----------------> RedShift Cluster
+                    (through VPC)
+        the 'Enhandced' VPC routing forced all COPY and UNLOAD traffic moving between cluster and data repo through VPCs
+      - EC2 Instance JDBC driver
+        EC2 Instance ---(JDBC)---> RedShift Cluster
+
+    Redshift Spectrum
+      Query data that is already in S3 without loading it
+      Must have a Redshift cluster available to start the query
+      The query is then submitted to thousands of Redshift Spectrum nodes
+
+      Query --(JDBC/ODBC)-- Redshift Cluster
+                              Leader Node
+                            Compute-node x m
+                               /        \
+                          Redshift Spectrum x n
+                                |   |   |
+                                Amazon S3
+
+  
+  Amazon OpenSearch Servcie
+    OpenSearch is successor to ElasticSearch
+    in DynamoDB, query only exist by primary key or indexes.
+    but OpenSearch can search any field, even partially matches            *
+    it is common to use OpenSearch as a component to another database
+    2 modes:
+      Managed cluster
+      Serverless cluster
+    Does not natively support SQL (can be enabled via a plugin)
+    Ingestion from Kinesis Data Firehose, AWS IoT, CloudWatch logs
+    Security throught Cognito & IAM, KMS encryption, TLS
+    COmes with OpenSearch dashboards
+
+    OpenSearch Patterns
+      DynamoDB
+        --(CRUD)-->DynamoDB Table ----> DynamoDB Stream ----> Lambda ----> Amazon OpenSearch
+                      ^ (API:retrieve)                                         | (API:search)
+                      |------------------------- App (@EC2)---------------------
+
+      CloudWatch log                                            (real time)
+        CloudWatch logs -----> subscription Filter ----> Lambda -----------> OpenSearch
+          or                                                                (near real-time)
+        CloudWatch logs -----> subscription Filter ----> Kinesis Data Firehose ----------> OpenSearch
+
+      Kinesis Data Stream & Data Firehose
+                                                     (near real-time)
+        Kinesis Data Streams ----> Kinesis Data Firehose ----------> OpenSearch
+                                            | (data transformation)
+                                          Lambda
+          or
+                                         (real-time)
+        Kinesis Data Streams ----> Lambda ----------> OpenSearch
+
+
+
+  Amazon EMR (Elastic MapReduce)
+    EMR helps creating Hadoop clusters (big data) to analyze and process vast amount of data
+    The clusters can be made of hundreds of EC2 instances
+    EMR comes bundled with Apache Spark, HBase, Presto, Flink
+    EMR takes care of all the provisioning and configuration
+    Auto-scaling and integrated with Spot instances
+    >> User case:
+       data processing, ML, web indexing, Big data
+
+    EMR - Node type & purchasing
+      - Master Node: Manage cluster, coordinate, manage health -- long running
+      - Core Node:   Run tasks and store data -- long running
+      - Task Node (optional):  run tasks, usually spot instances
+      Purchasing options:
+        On-demand: reliable, predicatable, won't terminate
+        Reserved:  min 1 year. cost saving, 
+        Spot Instances: cheaper, less reliable, for task nodes
+    Can have long-run cluster, or transient (temp) cluster
+
+    
+  Amazon QuickSight
+    Serverless ML powered business intelligence servcie to create interactive dashboards
+    ----------                                                    ----------------------
+    Fast, automatically scalable, embeddable, 
+    per-session pricing
+    Integrated with RDS, Aurora, Athena, Redshift, S3
+    In-momery computation using SPICE engine, (if data is imported into QuickSight)
+    Enterprise edition: support Column-level security (CLS)
+
+    QuickSight Integration:
+      RDS, Aurora, Redshift, Athena, S3, OpenSearch, Timestream
+      3rd party, e.g. JIRA
+      on-premises DB (JDBC)
+      Data source import (CSV,JSON,ELF/CLF, etc)
+
+    QuickSight - Dashboard & Analysis
+      Define Users (standard versions) and Groups (enterprise version)
+        These users/groups only exist within QuickSight, not IAM
+      Dashboard:
+        a read-only snapshot of an analysis that you can share
+        preserves the configuration of the analysis (filtering, parameters, controls, sort)
+      You can share the analysis or the dashboard with users or groups    *
+      To share the dashboard, you must first publish it
+      Users who see the dashboard can also see the udnerlying data
+
+
+  AWS Glue
+    Managed extract, transform, and load (ETL) service
+    Useful to prepare and transform data for analystics
+    Fully serverless servcie
+    e.g
+      S3 ------____ (extract)__ Glue ETL ---(load)--->Redshift
+      RDS -----                (transform)
+
+    Glue - convert data into Parquet format
+    e.g.
+      --(S3 Put)--> S3 Bucket --(import CSV)--> Glue ETL --(Parquet)--> S3 --(Analyze)--> Amazon Athena
+                       |                           ^
+                       |                           |
+              Event Notification --------------> Lambda
+                                           or EventBridge
+
+    Glue Data Catalog: catalog of datasets
+                                                                   Glue jobs (ETL)
+      S3/RDS/DynamoDB ----Glue Data Crawler --(write metadata)--> Glue Data Catalog ---> Athena/Redshift Spectrum/EMR
+
+
+    Glue - things to knowledge
+      Glue JOb Bookmark:  prevent re-processing old data
+      Glue Elastic Views:
+        Combine and replicate data across mutiple data stores using SQL
+        No custom code, Glue monitors changes in the source data, serverless
+        Leverage a 'virtual table' (materialized view)
+      Glue DataBrew:    Clean and normalize data using pre-built transformation
+      Glue Studio:      new GUI to create, run and monitor ETL jobs in Glue
+      Glue Streaming ETL: (build on Apache Spark Structured Streamoing)
+        Compatible with Kinesis Data Streaming, Kafka, MSK (managed Kafka)
+
+
+  AWS Lake Formation
+    Data lake =  central place to have all your data for analytics purposes
+    Fully managed servcie
+    Discover, cleanse, transform, ingest data into Data Lake
+    Automates many complext manual steps (collecting, cleaning, moving, cataloging data) and de-duplicate (using ML Transforms)
+    Combine structured and unstructured data in the data lake
+    Out-of-the-box source blueprints: S3, RDS, NoSQL, ..
+    Fine-grained Access Control for app (row/column)
+    Build on top of AWS Glue
+
+      Data Source (S3,RDS, Aurora, On-premises)
+                                  |---(ingest)---> Data Lake Formation ---> Athena/Redshift/EMR ---> Users
+                                                          |
+                                                       Data Lake
+                                                     (stored in S3)
+
+    AWS Lake Formation Centralized permissions
+    e.g.
+
+      Data Srouces (S3, RDS, Aurora, ...) --(ingest)--> Data Lake Formation ---> Athena/Redshift/EMR --> QuickSight---> Users
+                                                          Access Control
+           
+
+  Kinesis Data Analytics for SQL Application
+    Realtime analytics on Kinesis Data Streams & Firehose using SQL
+    Add reference data from S3
+    Fully managed, no servers to provision
+    auto scaling
+    pay for actual consumption retained
+    output:
+      Kinesis Data streams:  create streams out of real-time analytics queries
+      Kinesis Data Firehose: send analystic query result to destination
+
+         Source                     SQL Statement
+    Kinesis Data stream     ---> Kinesis Data Analystics ---> Kinesis Data stream  ---> Lambda/App
+    Kinesis Data Firehose          for SQL Application        Kinesis Data Firehose --> S3/Redshift/..
+                                          |
+                                  Reference Data in S3
+    >> Use case:
+       Time-series analytics
+       Real-time dashboards
+       Real-time metrics
+
+  Kinesis Data Analytics for Apache Flink
+    Use Flink (Java, Scala, SQL) to process and analyze streaming data
+      Kinesis Data Streams  ---\___ Kinesis Data Analytics for Apache Flink
+      Amazon MSK            ---/
+    Run any Apache Flink App on a managed cluster on AWS
+      Provisioning computer resources, parallel computation, automatic scaling
+      app backups (checkpoints and snapshots)
+      use any Flink programming features
+      Flink does NOT read from Firehose (use Kinesis Analytics for SQL instead)
+
+
+  Amazon MSk (Managed Streaming for Apache Kafka)
+    Alternative to Kinesis
+    Fully managed Apache Kafka on AWS
+      allow you to create, update, delete clusters
+      MSK cereate & manage kafka broker node & Zookeeper nodes
+      Deploy the MSK cluster in VPC, multi-AZ (up to 3 for HA)
+      Auto recovery from common Apache Kafka failures
+      Data stored in EBS volumes for as long as you want
+    MSK Serverless
+      Run Kafka on MSK without managing the capacity
+      MSK auto provision resources and scales computer & storage
+
+    Kinesis Data Stream      vs      Amazon MSK
+    -----------------------------------------------
+    1MB message size limit           1MB default (up to 10MB)
+    Data Streams with Shards         Kafka Topics with partitions
+    Shard Splitting & Merging        Can only add partition to topic
+    TLS in-flight encryption         PlainText or TLS in-flight encryption
+    KMS at-rest encryption           MKS at-rest encryption
+
+    MSK Consumers
+                Kinesis Data Analytics for Apache Flink
+      MSK ----> AWS Glue Streaming ETL jobs (by Apache Spark Streaming)
+                Lambda
+                APPs on EC2
+
+
+  Big Data Ingestion Pipeline
+    requirements
+      ingestion pipeline to be fully serverless
+      collect data in real time
+      transform data
+      query the transformed data using SQL
+      create reports in S3 for the queries
+      laod data into warehouse and create dashboards
+
+    e.g.
+                                                                               ________(Pull data)________
+               (real-time data)                                               |                           |     (reporting)
+      IoT devices -------> Kinesis Data Streams --> Kinesis Data Firehose --> S3 --> SQS ---> Lambda --- Athena ---S3 ---> QuickSight
+                                                            |                                                         \___ Redshift   
+                                                          Lambda
+
+
+
 
 
 
