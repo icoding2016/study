@@ -3024,6 +3024,23 @@ Data Analytics
 
 
 
+/////////////////////////////////////////
+Machine Learning
+
+  Rekognition: face detection, labeling, celebrity recognition
+  Transcribe:  audio to text (e.g. subtitle)
+  Polly:       text to audio
+  Translate:   translate
+  Lex:         build conversation bots - chatbots
+  Connect:     cloud contact center
+  Comprehend:  NLP (Natual Language Processing)
+  SageMaker:   Machine Learning for every developer and data scientist
+  Forcast:     build high accurate forcasts
+  Kendra:      ML-powered search engine
+  Personalize: real-time personalized recommendation
+  Textract:    detect text and data in documents
+  
+
 
 
 
