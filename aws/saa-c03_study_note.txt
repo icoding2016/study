@@ -3043,6 +3043,167 @@ Machine Learning
 
 
 
+//////////////////////////////////
+Amazon CloudWatch
+
+  Amazon CloudWatch Metrics
+    Metrics belong to Namespaces
+    Dimension is an attribute of a metric (instance id, environment, etc)
+    Up to 30 dimensions per metric
+    Metric has timestamps
+    Can create CloudWatch dashboard for metrics
+    Can create CloudWatch Custom Metrics
+
+  CloutWatch Metric Streams
+    Continually steam Cloudwatch metric to a destination.
+    with near-real-time delivery and low latency
+    - Kinesis Firehose
+    - 3rd party servcie provider: Datadog, Dynatrace, New Relic, Splunk, Sumo Logic, etc
+  Option to filter metric to only stream a subset of them
+
+  CloudWatch logs
+    Log groups: arbitray name, representing an application
+    Log stream: instances within application / log files / containers
+    Can difine log expriation policies (never/ 1day ~ 10years)
+    CloudWatch can send logs to
+      S3 (export)
+      Kinesis Data streams
+      Kinesis Data Firehose
+      Lambda
+      OpenSearch
+    Logs are encrypted by default
+    Can setup KMS-based encryption with your own keys
+
+  CloudWatch Logs - Source
+    SDK, CloudWatch Logs Agent, ClodWatch Unified Agent
+    Elastic Beanstalk: collection of logs from application
+    ECS: collection from containers
+    Lambda: collection from function logs
+    VPC flow logs: VPC logs
+    API Gateway
+    CloudTrail based on filter
+    Route53
+
+  CloudWatch Logs Insights
+    Visualizatin tool
+    Search and analyze lgo data in CloudWatch logs
+    Provide a purpose-built query language
+      Auto discover fields from AWS servcies and JSON log events
+      Fetch desired event filed, filer base on condition, calculate aggregatin statistics, sort events, limit number of events.
+      Can save queries and add them to CloudWatch Dashbaords,
+    Can query multiple Log Groups in different AWS account
+    A query engine, not a real-time engine
+
+  CloudWatch Logs - S3 Export
+    Log data can take up to 12 hours to be available for export
+    API:  CreateExportTask
+    Not (near-)real-time, use Logs subscriptions instead for 'real-time'
+
+  CloudWatch Logs subscriptions
+    Real-time log event
+    Send to Kinesis Data Steams/Firehose, Lambda
+    Subscription Filter
+                                                     /--> Lambda --(real-time) --> OpenSearch 
+    CloudWatch Lgos --(logs)--> subscription Filter ----> Kinesis Data Streams --> KDF/KDA/EC2/Lambda
+                                                     \--> Kinesis Firehose     --> S3
+
+    Cross-Account Subscription: send log event to resource in differnt AWS account (KDS, KDF)
+            Account (Sender)                                    Account (Receiver)
+      CloudWatch logss --- subscription filter --(log)--> Subscription Dest ---> target(e.g. Kinesis)
+                                                            (Dest Access policy)  
+                            can be assumed (------------>) IAM role (allow put to target)
+
+  CloudWatch Logs Aggregation Multi-Account & Multi-Regions
+    e.g
+    Account-A/Region-1 ---> Subscription-Filter --\
+    Account-B/Region-2 ---> Subscription-Filter ---> Kinesis Data Stream
+    Account-C/Region-3 ---> Subscription-Filter --/
+
+  CloudWatch Agent
+  
+    e.g. CloudWatch log for EC2
+      by default, no logs from EC2 to CloudWatch.
+      Need to run CloudWatch agent on EC2 to push log
+      Need IAM permission (allow EC2 to send log to CloudWtach)
+      CloudWatch log agent can be setup on-premises
+
+    2 types:
+    - CloudWatch Logs Agent (old)
+      Can only send log to CloudWatch logs
+    - Cloudwatch Unified Agent
+      Collect additional system-level metrics, e.g. RAM, processes
+      Collect log to send to CloudWatch Logs
+      Centralized configuration using SSM Parameter Store
+
+    CloudWatch Unified Agent - Metrics
+      Collect directly on your Linux / EC2 instance
+      e.g
+        CPU, DIsk, RAM, NetStat, Processes, swap space, etc
+
+
+  CloudWatch Alarms
+    Alarms used to trigger notification for any metric
+    Various options (sampling, %, max, min, etc)
+    Alarm status:
+      OK, Insufficient_data, ALARM
+    Period:
+      in sec
+      High resolution custom metrics: 10 sec, 30 sec, nx60 sec
+
+    CloudWatch Alarm Targets
+      EC2:  Stop / Terminate / Reboot, Recover EC2 instance
+      ASG:  trigger Auto Scaling Action
+      SNS:  Send notification
+
+    CloudWatch Alarms - Composite Alarms
+      -- a combinatino of metrics
+      Composite Alarms are monitoring the state of multiple other alarms
+      And and OR conditions
+      Helpful to reduce 'alarm noise' by creating complex composite alarms
+
+    EC2 Instance Recovery
+      
+
+  Amazon Eventbridge (formerly CloudWatch Events)
+    
+    >> USe case.
+      Schedule: Cron jobs.
+          e.g. schedule <time> trigger lambda 
+      Event Pattern: Event rule to react to a service
+          e.g. IAM Root user sign in event --> SNS Topic with Email notification
+      Trigger Lambda function.
+          e.g. -> trigger SQS/SNS
+
+    Amazone EventBridge Rules.
+      Source:  eg. EC2 instance, S3, CodeBuild, CloudTrail, Schedule/Cron, Trusted Advisor
+      Filter:
+      EventBridge: -> JSON
+      Dest:    eg. Lambda, SQS, SNS, KDS, ECS Task, AWS Batch
+
+    Default Event Bus
+    Partner Event Bus
+    Custom Event BUs
+
+    EventBus can be accessed by other AWS accounts using Resource-based Policies
+    Can archive events (all/filter) sent to an event bus (indefinitely or periodically)
+    Ability to replay archived events
+
+    EventBridge - Schema Registry
+      EventBridge can analyze the events in the bus and infer the schema
+      Schema Registry: allow you to generate code for application, that knows how data is structured in the event bus
+      Schema can be versioned
+
+    EventBridge - Resource based Policy
+      Manage permission for a specific Event Bus
+        (allow/deny events from another AWS account/region)
+      >> Use case:
+        Aggregate all events from your AWS Organization in a single AWS accont or AWS region
+
+
+
+
+
+
 
 
 
