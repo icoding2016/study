@@ -3086,7 +3086,7 @@ Amazon CloudWatch
 
   CloudWatch Logs Insights
     Visualizatin tool
-    Search and analyze lgo data in CloudWatch logs
+    Search and analyze log data in CloudWatch logs
     Provide a purpose-built query language
       Auto discover fields from AWS servcies and JSON log events
       Fetch desired event filed, filer base on condition, calculate aggregatin statistics, sort events, limit number of events.
@@ -3199,14 +3199,249 @@ Amazon CloudWatch
       >> Use case:
         Aggregate all events from your AWS Organization in a single AWS accont or AWS region
 
+    EventBridge - Archive and Replay               *
+      >> Use case:
+        A serverless app on AWS use EventBridge between services within the app. There is a requirement to store the events > 6 month. 
+        What is the most efficent and cost-effective way to store EventBridge events and use them later?
+        --> EventBridge Archive and Replay feature
+
+
+  CloudWatch Insights and Operational Visibility
+    Cloudwatch Container Insights
+      Collect , aggregate, summarize metrics and logs from containers
+      Available for containers on :  ECS, EKS, K8s on EC2, Fargat (both ECS and EKS)
+      In Amazon EKS and K8s, CloudWatch Insights is using a containerized version of the CloudWatch Agent to discover containers.
+
+    CloudWatch lambda Insights 
+      Mornitoring and troubleshoting solution for serverless applications running on Lambda
+      COllects/Aggregates/summarizes system-level metrics and diagnostic information.
+      Lambda Insights is provided as a Lambda Layer
+
+    CloudWatch Contributor Insights
+      Analyze log data and create time series and display contributor data.
+        See metrics about top-N contributors                            *
+        The total number of unique contributors and their usage
+      works for any AWS generated logs (VPC, DNS, etc)
+      build your rules or use AWS sample rules
+      CloudWatch provides built-in rules that you can use to analyze metrics from other AWS services
+
+    CloudWatch Application Insights
+      automated dashboard to show potential problems with monitored application, help isolate ongoing issues
+      applications running on EC2 instances with selected technologies
+      Can use other AWS resources
+      powered by SageMaker
+      Enhance visibility into application
+      Findings and alerts are sent to Amazon EventBridge and SSM OpsCenter
+
+
+  CloudTrail
+    Provide governance, compliance and audit for AWS account
+    Enabled by default
+    Get history of event/API call made with AWS Account: Console, CLI, SDK, AWS Services
+    Can put logs from CloudTrail into CloudWatch Logs or S3,  to keep it > 90 days
+    A trail can be applied to All Regions (default) or a single Region
+    If a resource is deleted in AWS, investigate CloudTrail first
+
+    CloudTrail Event
+      - Management Events
+        Operations that are performed on resource in AWS account
+        By default, trails are configured to log management events
+        Can seperate Read / Write event
+        E.g  Configuring security, routing rules, logging ...
+      - Data Events
+        BY default, NOT enabled in trail
+        Amazon S3 object-level Activity
+        Lambda function execution activity (Invoke API)
+        Can seperate Read / Write event
+      - CloudTrail Insight Events
+        detect unusual activity in account
+          (inaccurate resource provisioning, hitting servcie limits, bursts of IAM action, gaps in periodic)
+        CloudTrail Insights analyzes normal management events to create a Baseline
+        And then continuously analyzes write events to detect unusual patterns
+          Anomalies appear in the CloudTrail console, Event is sent to S3, An Eventbridge event is generated
+
+          Management Events --(continues analysis)--> CloudTrail Insights --(generate)--> Insights Events CloudTrail console/S3/EventBridge
+
+
+    CloudTrail Events Retention
+      Events are stored for 90 days in CloudTrail
+      To keep events > 90 day, log them to S3 and use Athena
 
 
 
+  AWS config
+    Helps record configuration and changes over time
+    Helps with auditing and recording compliance of AWS resources
+    Can receive alert (SNS notification) for any changes
+    AWS config is a per-region service
+    Can be aggregated across regions and accounts
+    Possibility of storing the configuration data into S3 (analyzed by Athena)
+
+    Config Rules:
+      AWS managed config rules (over 75)
+      customized config rules (must be defined in AWS Lambda)
+      Rules can be evaluated/triggered:  for each config change (AND, OR) at regular time intervals
+      AWS config rules does not prevent actions from happening
+      Pricing: 
+        no free tier,  $0.003 per configuration item recorded per region
+                       $0.001 per confg rule evaluation per region
+
+    Config Resource
+      View compiance of a resource over time
+      View configuration of a resource over time
+      View CloudTrail API calls pf a resource over time
+
+    Config Rules - Remediations
+      Automate remediation of non-compliant resrouces using SSM Automation document
+      Use either AWS-Managed Automation Documents or Custom Automation Documents
+        - can create custom Automation Documents that invokes Lambda Function
+      Can set Remediation Retries if the resource is still non-compliant after auto-remediation
+
+        non-compliant config <--(monitor)-- AWS Config --(trigger)--> Auto-Remidiation Action
+              ^                                                                   |
+              |-------------------------------------------------------------------
+
+    Config Rules - Notifications
+      Use EventBridge to trigger notifications when AWS resources are no-compliant
+      Ability to send configuration chagnes and compliance state notifications to SNS
+
+    CloudWatch vs CloudTrail vs Config
+      CloudWatch:  for Performance monitoring & dashboards, Event, Log
+      CloudTrail:  Record API calls, Global Service
+      Config: Record config changes, Evaluate resources against compliance rule, 
+
+      
 
 
+////////////////////////////////////////////
+IAM Advanced
+
+  Organization
+    Global service
+    Allows to manage multiple AWS accounts
+    the main account is the management account, others are member accounts
+    Member accounts can only be part of one organization
+    Consolidated billing across all accounts - single payment method
+    Pricing benefits from aggregated usage (Volume discount for EC2, S3)
+    Shared reserved instances and Savings Plans discounts across account       *
+    API is available to automate AWS account creation
+
+    Root OU (Root Organization Unit)
+      Management Account
+      Member Accounts
+      Sub OU
+        Member Account
+    
+    Advantages:
+      Multi Accounts vs On Account Multi-VPC
+      Use tagging standards for billing purposes
+      Enable CloudTrail on all accounts, sned logs to central S3 account
+      Send CloudWatch logs to central logging account
+      Establish Cross Accont Roles for Admin purpose
+    Security:  SCP (Service Control Policies)
+      IAM policies applied to OU or accounts to restrict Users and Roles
+      They do not apply to the management account (full admin power)
+      Must have an explicit allow (no allow anything by default)
+
+      SCP: Blacklist , Allowlist strategy
+
+    e.g.
+      Root OU:  FullAWSAccess SCP
+      Management Account:  DenyAccessAthena SCP  --> Can do anything. it does not impact the access. (Management has full access)
+      Sub-OU-1:  DenyRedshift SCP                
+        Account A: AuthorizedRedshift SCP        --> Can do anything except Redshift (deny + authorized = deny)
+        Sub-OU-1-1: DenyAWSLambda SCP
+          Account B:                             --> Can do anything except Redshift and Lambda
+        Sub-OU-1-2:
+          Account C:                             --> Can do anything except Redshift
 
 
+  IAM Conditions:
+    
+    aws:SourceIp        - restrict the client IP from which the API calls are made
+    aws:RequestedRegion - restrict the region the API calls are made to
+    ec2:ResourceTag     - restrict based on tags
+    aws:MultiFactorAuthPresent  - to force MFA
 
+    IAM for S3
+      bucket level permission:
+        e.g. s3:ListBucket,    arn:aws:s3:::test
+      Object level permission:
+        e.g. s3:GetObject, s3:PutObject, s3:DeleteObject,   arn:aws:s3:::test/*     *
+                                                                            ~~~~
+    Resource Policies & aws:PrincipleOrgID
+      aws:PrincipalOrgID can be used n any resource policies to restrict access to accounts that are member of an AWS Organization
+
+
+    IAM Roles vs Resource Based Policies
+      2 ways of Cross account access
+        - IAM Roles
+          when assume a role (user, app or service), you give up your original permission and take the permission assigned to the role
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        - Resource Based Policies
+          when using a resource-based policy, the principle doesn't have to give up his permissions
+      e.g
+        User Account A ----(Role Account B)----> S3
+        User Account A ----(S3 Bucket Policy)----> S3
+      Supported by: Amazon S3 buckets, SNS topics, SQS Queues, etc
+      e.g  User A needs to scan a DynamoDB in Account A and dump it in S3 bucket in account B.
+           Resource policy is recommended in this case
+
+      Amazon EventBridge - Security
+        When a rule runs, it needs permissions on the target.
+                                                                                          *
+        Resource-based policy: Lambda, SNS, SQS, S3, API Gateway...
+        IAM Role: ECS task, Kinesis stream, SYstems Manager Run Command...
+
+
+    IAM Permission Boundaries
+      IAM Permission Boundaries are supported for users and roles (not groups)
+      Advanced feature to use a managed policy to set the max permission an IAM entity can get.
+      Can be used in combinations of AWS Organizations SCP
+
+      e.g
+                 [ Identity-based policy]             
+        [ Organizations SCP ]
+                      [ Permission boundary ]
+                      |     |
+                      |<--->|
+                effective permissions
+
+    IAM Policy Evaluation Logic
+      Deny evaluation - Organization SCPs - Resource-based policies - Identity-based policies - IAM permissions boundaries - Session policies
+
+    IAM Identicy center
+    (successor to AWS Single Sign-On)
+      One login (single sign-on) for all your:
+        AWS accounts in AWS Organization
+        Business cloud applications (e.g. MS 365)
+        SAML2.0-enabled applications
+        EC2 Windows Instances
+      Identity providers
+        Built-in identity store in IAM Identity Center
+        3rd party: AD OneLogin, Okta
+
+      Browser Interface --(login)--> IAM Identity Center ---(SSO)---> AWS Cloud / Business CloudApp / Custom SAML2.0-enabled app
+                                             |
+                                             |(store/retrieve user identities)
+                                             |
+                                     AD (User & Group)
+                                IAM built-in Identity Store
+
+
+      Permission-set
+        -- a collection of one or more IAM Policies assigned to users and groups to define AWS access
+        assign specific permission-set to the group in IAM Identity Center,
+
+      Fine-grained permissions and assignments
+        Multi-Account permissions
+          Permission-set
+        Application assignments
+          SSO access to many SAML2.0 apps
+          provide required URLs, cers, metadata
+        Attribute-Based Access Control (ABAC)
+          Fine-grained permissions based on users' attributes stored in IAM Identity Center Identity Store
+          
 
 
 
