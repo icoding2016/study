@@ -3441,7 +3441,296 @@ IAM Advanced
           provide required URLs, cers, metadata
         Attribute-Based Access Control (ABAC)
           Fine-grained permissions based on users' attributes stored in IAM Identity Center Identity Store
-          
+
+
+...
+
+
+
+
+  ACM (AWS Certificate Manager)
+    provision, manage and deploy TLS Certificate
+    Support both private and public TLS certificates
+    Auto TLS certificate renewal
+    Integration with:  ELB, Cloud Front, API Gateway
+    Cannot use ACM with EC2
+
+    ACM - Requesting Public Certificates
+      List domain names
+      Select Validation Method: DNS / Email
+      Public Certificate will be enrolled for auto renewal -- 60 days before expiry
+
+    ACM - Importing Public Certificate
+      No auto renewal
+      ACM sends daily expiration event starting 45 days prior to expiration
+      AWS Config has a managed rule (acm-certificate-expiration-check) to check for expiring certs (configurable number of days)
+
+    ACM - Integration with ALBs
+      Redirect HTTP to HTTPS
+
+    API Gateway - Endpoint Types
+      Edge-Optimized (default) -- for global clients. Requests routed through CloudFront,  The API Gateway lives in one region
+      Regional -- for client within same region
+      Private  -- accessed from VPC using ENI with resource policy
+
+    ACM Integration with API Gateway
+      - Need to create a Custom Domain Name in API Gateway
+      - Edge-Optimized GW (default): 
+        The API Gateway lives in only one region
+        The TLS Certificate must be in the same region as CloudFront (us-east-1)
+        Then setup CNAME or A-Alias (better) record in Route53
+      - Regional:
+        For client within the same region
+        The TLS certificate must be imported on API Gateway, the the same region as API stage
+        Then setup CNAME or A-Alias (better) record in Route53
+
+
+
+  WAF (Web Application Firewall)
+    Layer &7 in HTTP
+
+    Deploy on:                             *  
+      - ALB
+      - API Gateway
+      - CloudFront
+      - AppSync GraphQL API
+      - Cognito Pool
+
+    Web ACL Rules:
+      IP Set: up to 10k IP
+      HTTP header/boday, URI, XSS (Cross-site Scripting)
+      geo-match (block countries)
+      Rate-based rules - for DDoS
+      Web ACL are regional except for CloudFront
+      A rule group is a reusable set of rules that can be added to web ACL
+
+    WAF - Fixed IP while using WAF with a Load Balancer
+      WAF does not support Network Load Balancer (L4)
+      We can use Global Accelerator for fixed IP and WAF on the ALB
+
+        Users --- Global Accelerator (fixed IP) --- ALB ------- EC2
+      WAF in the same region as the ALB              |                                       |
+                                                    WAF
+
+  AWS Shield: protect from DDoS (Distributed Denial of Service)
+    AWS Shield Standard:
+      Free
+      protection from attacks like SYN/UDP floods, Reflection attacks and other L3/L4 attacks
+    AWS Shield Advanced:
+      $3000 / month per organization
+      advanced protection (ALB, CLB, NLB, Elastic IP, CloudFront)
+      24/7 support team - DRP (DDoS Response team)
+      auto create/evaluate/deploy WAF rules to mitigate L7 attacks.
+
+
+  AWS Firewaall Manager
+    Manage rules in all accounts of an AWS organization.
+
+    Security policy: common set of security rules:
+      WAF rules
+      AWS Shield Advanced
+      Security Groups for EC2, ALB and ENI resource in VPC
+      AWS Network Firewall (VPC level)
+      Route53 Resover DNS Firewall
+      Policies created at the region level
+
+    Rules are applied to new resources as they are created across all and future accounts in your organization
+
+  VAF vs Firewall Manager vs Shield
+    WAF, Firewall Manger and Shield are used together for comprehensive protection
+
+    WAF -- Define Web ACL rules
+           For granular protection on your resources
+    Firewall Manager
+        -- Use WAF across accounts, 
+           accelerate WAF configuration, 
+           auto protect new resources
+    Shield Advance 
+        -- additional features on top of WAF to protect from L7 attacks
+
+
+  Amazon GuardDuty
+    Intelligent Threat discovery to protect AWS Account
+    Uses Machine Learning algorithms, anomaly detection, 3rd party data
+    Input data includes:
+      CloudTrial Events (Manangement/S3 Data events) Log -- unusual API calls, unauthrized deployemnts
+      VPC Flow logs -- unusual internal traffic, unusual IP addresses
+      DNS Logs      -- compromized EC2 instances seding encoded data within dNS queries
+      Optional Features -- EKS Audit Logs, RDS & Auraora, EBS, Lambda, S3 Data Events...
+    Can setup EventBridge rules to be notified fin case of Findings
+    EventBridge rules can target AWS Lambda or SNS
+    Can protect agiainst CryptoCurrency attack.
+
+
+  Amazon Inspector
+    Automated Security Assessments
+    Only for EC2 instances / Container Images / Lambda Functions
+      EC2: 
+        leverage SSM
+        Analyze unintended network accessibility
+        Analyze OS vulnerabilities 
+      Container Imanges
+        Assessment of container images
+      Lambda Functions
+        identify software vulnerabilities in code and package dependencies
+
+    Reporting & integration with Security Hub
+    Send findings to Event Bridge
+
+    Continueous scanning of the infrastructure only when needed
+    Package vulnerabilities (EV2, ECR & Lambda)  -- database of CVE
+    Network reachability
+    A risk score is associated with all vunlerablities for prioritization
+
+
+  Amazon Macie
+    a fully managed data security and privacy service
+    use Machine Learning and pattern matching to discover and protect sensitive data.
+    Macie helps identify and alert yoiu to sensitive data (PII -- Persenal Identifiable Information)
+    eg.
+      S3 bucket --(analyze)--> Macie --(notify)--> Eventbridge
+                           discover PII
+
+
+
+    Q:            *
+    How to share an AMI that has an encrypted EBS snapshot using KMS CMK?  -- need to share the KMS CMK as well to the other AWS Account
+    How long time does the KMS key rotate?    --- 1Y
+    How to do 3months rotation for the customer-manged CMK in KMS?    -- manually rotation, create new KMS CMK and use key aliases to refer to new KMS CMK,
+                                                                         keep the old CMK to decrypt the old data
+    What should you use to control access to your KMS CMKs?    -- KMS Key Policies
+    What AWS servcie can be used to store/track-version secret data    -- SSM Parameter Store
+    Which service checks your image OS vulnerability    -- AWS Inspector
+    Which service centrally manage EC2 Security Groups and AWS Shield Advanced accross all AWS account in you organization?
+        -- AWS Filewall Manager
+    Which service protect your sensitive data stored in S3?    -- Macie
+    Why the SSE-KMS encrypted S3 bucket object failed to be replicated to another bucket in the same AWS regaion but with a differnt KMS Key.
+        -- 1) the S3 replicateion, Target bucket and target KMS key need to be configured
+           2) have to config permissions for obth source KMS Key (kms:Decrypt) and Target KMS Key (kms:Encrypt) to be used by S3 Replication Service
+    Which service can be used to manage security groups and WAF rule across multiple account?   -- AWS Firewall Manager
+
+
+
+
+///////////////////////////
+
+VPC
+
+  NAT-instance vs NAT-Gateway
+    NAT-instance:  self managed
+                   self maintain the EC2, SG, No auto HA (can use script for failover)
+                   use Bastion host
+    NAT-Gateway:   AWS managed. 
+                   Auto Instance, SG, HA
+                   No need basion host
+
+
+  NACL
+    NACL like filewall that control traffic from/to subnets
+      (a good way to block specific IP at subnet level)
+    1 NACL per subnet
+    new subnets are assigned with default NACL (allows everything in/out for the subnet)
+    define NACL rules:
+      - rule number 1-32766,   lower number higher precidence
+      - First rule match will drive the decision
+        e.g  #100 has higher precedence over #200, so 10.0.0.10/32 is allowed
+          #100 ALLOW 10.0.0.10/32
+          #200 DENY 10.0.0.10/32
+      - the last rule is *          - that DENY everything
+    newly created NACLs deny everything 
+    Default NACL -- Accept everything inbound/outbound with the subnets it associate with
+
+    The traffic are check by both NACL and SG. should satisfy both to get pass
+    e.g.
+        Rule    Type     Protocol  Port    Source   Allow/Deny
+        #100  all-IPv4    All      All   0.0.0.0/0   ALLOW
+          *   all-IPv4    All      All   0.0.0.0/0   DENY
+    
+                                  NACL        SG      EC2 Instance
+                                       ------------- subnet --------------
+                              
+      -- inbound traffic --> NACL-inbound -->   SG-inbound -->
+                                                                EC2 Instance
+     <-- outbound traffic -- NACL-outbound <--  SG-outbound <--
+                                                (stateful)
+
+    Ephemeral Ports:
+      IANA & Windows:  49152-65535
+      Linux Kernels:   32768-60999
+
+    NACL with Ephemeral Ports:
+      e.g
+        Web Subnet (Public)          NACL                NACL         DB Subnet (Private)
+                                allow TCP 3306       Allow TCP 3306
+             client    --out--> to DB subnet  -----> from web Subnet -->     DB
+          ephemeral-port                                                    instance
+                       <--in-- Allow In TCP         Allow out TCP            (3306)
+                               port 1024~65535 <--- port 1024~65535  <--  
+
+
+    SG vs NACL:
+      SG:   stateful  (SG inbound rule satisfied, then corresponding outbound allowed) 
+            Instance Level 
+            support ALLOW rules only  
+            All rules evalueated before decision     
+            Applies to EC2 instance when specified
+      NACL: stateless (explicit/separate inbound and outbound rule)
+            Subnet Level
+            support ALLOW/DENY rules
+            Rules are evaluated in order, first match wins
+            Auto applies to all EC2 instances in the subnet it associated with
+
+
+  VPC Peering
+
+    Privately connect 2 VPCs using AWS network
+    make them behave as if they are in the same network
+    Must NOT have overlapping CIDRs
+    VPC Peering connection is NOT transitive (must be established for each VPC)
+    You MUST update route tables in each VPC's subnets to ensure EC2 instances can communicate with each other
+    VPC Peering connection can be created ACROSS REGION (between VPCs in different accounts/regions)
+    You can reference a security group in a peered VPC (works across account - same region)
+
+
+  VPC Endpoint
+    (AWS PrivateLink)
+    To access AWS service via AWS private network instead of going throught the public network.
+      (no need for IGW, NAT-GW, etc to access AWS Services)
+
+    Every AWS service is poublic exposed (public URL), so that's one option for accessing. VPC Endpoint is another.
+    VPC Endpoints are redundant and scale horizontally.
+    In case of issues:
+      check NDS for VPC
+      check Route tables
+
+    Types of VPC Endpoint
+      Interface Endpoint
+        Provision an ENI (Private IP) as an entry point (must attach a SG)
+        Support most AWS service
+        $ per hour + $ per GB of data processed
+      Gateway Endpoint
+        Provisions a gateway and must be used as a target in the route table (Does not use SG)
+        Only support 2:  S3 and DynamoDB
+        Free
+
+    Interface Endpoint vs Gateway Endpoint
+      Gateway is mostly likely to be preferred.  it is free.
+      Interface Endpoint is prefered when:
+        access is required from on-premises (site to site VPN or Direct Connect)
+        access is required from a different VPC on a different region
+      In most cases, Gateway Endpoint is preferred ( in exam)            *
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
