@@ -3721,22 +3721,43 @@ VPC
       In most cases, Gateway Endpoint is preferred ( in exam)            *
 
 
+    VPC Flow Logs
+      Capture information about the IP traffic going into your interface
+        VPC Flow logs
+        Subnet Flow logs
+        ENI (Elastic Network Interface) Flow Logs
+      Flow Logs data can go to: S3, CloudWatch Logs, KDF (Kinesis Data Firehose)
+      Caputure information from AWS managed interfaces: ELB, RDS, ElasticCache, Redshift, WorkSpace, NAT-GW, Transit-GW
+      Can query VPC Flow Logs on S3-Athena or CloudWatch-Logs.
 
 
+  Site-to-Site VPN
+    
+    VGW (Virtual-Private-Gateway)
+      VPN Concentrator on AWS side of the VPN Connection
+      Possibility to customize the ASN (Autonomous System Number)
+    CGW (Customer Gateway)
+      Software application or physical device on customer side (on-premises) of the VPN connection
+
+    CGW IP address:
+      scenario:
+        public IP
+        private IP (behind NAT)
+      Note: 
+        Need to enable the "Route Propagation" for the VGW in the route table that is associated with your subnets.
+        Need to enable ICMP on the EC2 inbound SG.
 
 
+    AWS VPN CoudHub
+      a 'hub' to connect multiple sites.
+      VPN CloudHub : CGW = 1:N
 
-
-
-
-
-
-
-
-
-
-
-
+      Secure communication between multiple sites
+      Low-cost hub-and-spoke mode between different locations
+      Goes over public internet (using VPN connection)
+      to set it up, 
+        connect multiple VPN connections on the same VGW,
+        setup dynamic routing and configure route tables.
 
 
 
