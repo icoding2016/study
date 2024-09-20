@@ -3760,6 +3760,91 @@ VPC
         setup dynamic routing and configure route tables.
 
 
+  Direct Connection (DX)
+    Provide dedicated private connection from remote network to VPC
+
+    Need to setup VGW (Virtual Private Gateway) on VPC
+    Access both public resource (S3) and private (EC2) on same connection
+    Support both IPv4 and IPv6
+    >> Use Cases:
+      Increase bandwidth throughput, and lower cost (private connection)
+      More consistent network experience -- application use real-time data feeds
+      Support Hibrid environments (on-premises and cloud)
+
+      Region                            Direct Connect                         Corporate (customer)
+          VPC                              location                                Data Center 
+          Private Subnet
+            EC2 instance  --- [VGW] --- [Direct Connect] --- [Curstomer] --- Customer router/firewall
+                           ___________/     Endpoint            router 
+                     S3  / 
+
+
+    Direct Connect Gateway
+      When connect to multiple VPCs in different region (same account), Direct Connect Gateway is required.
+
+      Region-1::VPC1  \                           (Private inf)
+                       |--- [Direct Connect Gateway] ----- [Direct Connect] ---- Customer network
+      Regopm-2::VPC2  /
+
+    Direct Connect - Connection Type:
+      Dedicated Connection:  1G, 10G, 100G
+        Physical eth port dedicated to customer
+        Request made to AWS first, then completed by AWS Direct Connect Partners
+      Hosted Connections:  50M, 500M, to 10G
+        Connection requests are made by AWS Direct Connect Partners
+        Capacity can be added/removed on demand
+      Lead times >= 1 month to establish new connection
+
+    Direct Connect - Encryption
+      Data in transit is NOT encrypted but is private
+      AWS Direct Connect + VPN (IPsec-encrypted) solution can provide 'encryption'
+
+    Direct COnnect - Resiliency
+      High Resiliency:  1+1 Direct Connect Locations
+        One connection at multiple locations   
+      Max Resiliency:   2 x (1+1) Connect Locations
+        Two connections at multiple locations respectively
+ 
+    Direct Connect + Site-to-Site VPN connection
+      1 + 1 connection between VPC and Corporate (on-premises)
+        Primary:  Direct Connect (expensive)
+        Backup:   Site-to-Site VPN
+
+
+  Transit Gateway
+    'Star' topo
+    for having transitive peering between thousands of VPC and on-premises
+
+    Regional resource, can work cross-region (peer Transit Gateway across regions)
+    Share cross-account using RAM (Resource Access Manager)
+    Route Tables: limit which VPC can talk with wich VPC
+    Works with DIerct Connect Gateway and VPN Connection
+    Support Multicast (the only service in AWS that support multicast)    *
+
+             Direct Connect
+        VPC     Gateway       VPC
+            \      |        / 
+             Transi Gateway 
+            /      |        \
+        VPC       VPN         VPC
+               Connection
+
+    Transit Gateway: Site-to-Site VPN ECMP
+      Routing strategy to allow to forward a packet over multiple best path
+      >> Use case:
+        create multiple site-to-site VPN connections to increase bandwidth
+
+        VPC(s) ===(multiple routes)=== Transit Gateway --- VPN --- Corp DC
+
+    Transit Gateway - Share Direct Connect between multiple accounts
+
+      Region:Account-1: VPC                                                            Direct Connect
+                            \__ Transit Gateway --- Direct Connect GW --- Transit VIF ---  endpoint --- Customer DC
+                            /
+      Region:Account-2: VPC
+
+
+
 
 
 
