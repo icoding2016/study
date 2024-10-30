@@ -1,5 +1,5 @@
 import asyncio
-# import aiohttp
+import aiohttp
 from datetime import datetime
 from functools import wraps
 
@@ -69,10 +69,11 @@ async def http_task(id:str, task_queue):
 @atiming
 async def test_http():
     urls = [
-        "google.com",
-        "linkedin.com",
-        "amazon.com.au",
-        "python.org",
+        "http://google.com",
+        "http://linkedin.com",
+        "https://github.com",
+        "http://amazon.com.au",
+        "https://leetcode.com",
     ]
     task_queue = asyncio.Queue()
     for url in urls:
@@ -88,8 +89,8 @@ async def main():
     await test1()
     print("### test2")
     await test2()
-    # print("### test_http")
-    # await test_http()
+    print("### test_http")
+    await test_http()
 
 
 asyncio.run(main())
