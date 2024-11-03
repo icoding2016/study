@@ -7,3 +7,5 @@ go/pkg/*
 go/pkg/linux_amd64/*.a
 **/venv*
 **/*.npy
+ml/data/FashionMNIST
+
