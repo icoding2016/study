@@ -1,0 +1,13 @@
+Data process / ML tools
+
+
+NumPy
+Pandas
+PyTorch
+matplotlib
+
+
+
+
+Q & A:
+PyTorch vs Pandas vs NumPy
