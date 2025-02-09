@@ -1,9 +1,15 @@
 numpy
 pandas
+matplotlib
 torch
 torchvision
 torchaudio
 torchtext
+beautifulsoup4 
+transformers
+nltk
 
-
+beautifulsoup4 
+python-dotenv
+pytest
 
